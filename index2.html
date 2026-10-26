@@ -1,108 +1,309 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>이주호의 홈페이지</title>
+
 <style>
-:root{--green:#1d3b36;--paper:#f4f7f6;--ink:#16211f;--sub:#56655f;--line:#cbd8d3;--accent:#1f6f5c}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.7}
+:root {
+  --green: #1d3b36;
+  --paper: #f4f7f6;
+  --ink: #16211f;
+  --sub: #56655f;
+  --line: #cbd8d3;
+  --accent: #1f6f5c;
+}
 
-/* 타입 선택자: 제목과 본문 공통 스타일 */
-h1{margin:0;font-size:56px;line-height:1.15;letter-spacing:-.03em}
-h2{margin:0 0 14px;font-size:24px;letter-spacing:-.02em;padding-bottom:8px;border-bottom:2px solid var(--ink)}
-h3{margin:0 0 6px;font-size:19px}
-p{margin:0 0 10px}
-a{color:var(--accent)}
-a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+* {
+  box-sizing: border-box;
+}
 
-header{background:var(--green);color:#fff;padding:72px 20px 56px;text-align:center}
-header p{margin:14px 0 0;font-size:22px;color:#bfe3d8;font-weight:600}
+html {
+  scroll-behavior: smooth;
+}
 
-nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-nav ul{list-style:none;margin:0 auto;padding:0;max-width:760px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
-nav a{display:block;padding:14px 16px;text-decoration:none;color:var(--ink);font-weight:600}
-nav a:hover{color:var(--accent);background:#eef5f2}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Pretendard", "Noto Sans KR",
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  line-height: 1.7;
+}
 
-main{max-width:760px;margin:0 auto;padding:12px 20px 40px}
-section{padding:32px 0 8px;scroll-margin-top:56px}
+/* 타입 선택자 */
+h1 {
+  margin: 0;
+  font-size: 56px;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+}
 
-/* id 선택자: 영역별 구분 */
-#intro dl{margin:0}
-#intro dt{float:left;clear:left;width:80px;color:var(--sub)}
-#intro dd{margin:0 0 6px 80px}
+h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+  letter-spacing: -.02em;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--ink);
+}
 
-/* class 선택자: 반복되는 프로젝트 항목 */
-.project{background:#fff;border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:8px;padding:18px 20px;margin-bottom:14px}
-.project p{color:var(--sub)}
-.project .link{display:inline-block;margin-top:4px;padding:8px 14px;background:var(--ink);color:#fff;border-radius:6px;text-decoration:none;font-weight:600}
-.project .link:hover{background:var(--accent)}
+h3 {
+  margin: 0 0 6px;
+  font-size: 19px;
+}
 
-footer{background:var(--green);color:#bfe3d8;text-align:center;padding:24px 20px;font-size:14px}
-footer p{margin:0}
+p {
+  margin: 0 0 10px;
+}
 
-/* 반응형 */
-@media (max-width:600px){
-  h1{font-size:38px}
-  header{padding:48px 16px 36px}
-  header p{font-size:18px}
-  h2{font-size:21px}
-  nav a{padding:12px 10px;font-size:15px}
-  #intro dt{float:none;width:auto}
-  #intro dd{margin-left:0}
+a {
+  color: var(--accent);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* 상단 헤더 */
+header {
+  background: var(--green);
+  color: #fff;
+  padding: 72px 20px 56px;
+  text-align: center;
+}
+
+header p {
+  margin: 14px 0 0;
+  font-size: 22px;
+  color: #bfe3d8;
+  font-weight: 600;
+}
+
+/* 메뉴 */
+nav {
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+nav ul {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 760px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+nav a {
+  display: block;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+nav a:hover {
+  color: var(--accent);
+  background: #eef5f2;
+}
+
+/* 본문 */
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 12px 20px 40px;
+}
+
+section {
+  padding: 32px 0 8px;
+  scroll-margin-top: 70px;
+}
+
+/* 소개 */
+#intro dl {
+  margin: 0;
+}
+
+#intro dt {
+  float: left;
+  clear: left;
+  width: 80px;
+  color: var(--sub);
+}
+
+#intro dd {
+  margin: 0 0 6px 80px;
+}
+
+/* 개별 프로젝트 */
+.project {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+.project p {
+  color: var(--sub);
+}
+
+.project .link {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 8px 14px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.project .link:hover {
+  background: var(--accent);
+}
+
+/* 하단 */
+footer {
+  background: var(--green);
+  color: #bfe3d8;
+  text-align: center;
+  padding: 24px 20px;
+  font-size: 14px;
+}
+
+footer p {
+  margin: 0;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 600px) {
+  h1 {
+    font-size: 38px;
+  }
+
+  header {
+    padding: 48px 16px 36px;
+  }
+
+  header p {
+    font-size: 18px;
+  }
+
+  h2 {
+    font-size: 21px;
+  }
+
+  nav a {
+    padding: 12px 10px;
+    font-size: 15px;
+  }
+
+  #intro dt {
+    float: none;
+    width: auto;
+  }
+
+  #intro dd {
+    margin-left: 0;
+  }
 }
 </style>
 </head>
+
 <body>
 
+<!-- 홈페이지 상단 -->
 <header>
   <h1>이주호</h1>
   <p>문헌정보교육과 화이팅</p>
 </header>
 
+<!-- 내비게이션 -->
 <nav aria-label="홈페이지 메뉴">
   <ul>
     <li><a href="#intro">소개</a></li>
     <li><a href="#interest">관심사</a></li>
     <li><a href="#activity">주요 활동</a></li>
-    <li><a href="#projects">프로젝트</a></li>
+    <li><a href="#projects">개별 프로젝트</a></li>
   </ul>
 </nav>
 
 <main>
+
+  <!-- 기본 정보 -->
   <section id="intro">
     <h2>소개</h2>
     <dl>
-      <dt>이름</dt><dd>이주호</dd>
-      <dt>학과</dt><dd>문헌정보교육과</dd>
-      <dt>이메일</dt><dd><a href="mailto:leejuhoqp10@gmail.com">leejuhoqp10@gmail.com</a></dd>
+      <dt>이름</dt>
+      <dd>이주호</dd>
+
+      <dt>학과</dt>
+      <dd>문헌정보교육과</dd>
+
+      <dt>이메일</dt>
+      <dd>
+        <a href="mailto:leejuhoqp10@gmail.com">
+          leejuhoqp10@gmail.com
+        </a>
+      </dd>
     </dl>
   </section>
 
+  <!-- 관심사 -->
   <section id="interest">
     <h2>관심사</h2>
     <p>바이브 코딩</p>
   </section>
 
+  <!-- 주요 활동 -->
   <section id="activity">
     <h2>주요 활동</h2>
     <p>인터넷자원론</p>
   </section>
 
+  <!-- 개별 프로젝트 -->
   <section id="projects">
-    <h2>프로젝트</h2>
+    <h2>개별 프로젝트</h2>
+
     <article class="project">
-      <h3>오늘의 할 일 만들기</h3>
-      <p>하루 동안 해야 할 일을 날짜별로 기록하고, 학업과 일상으로 나누어 관리하는 앱입니다. 완료 여부, 진행률, 전체·남은·완료 개수를 한눈에 볼 수 있습니다.</p>
-      <a class="link" href="file:///C:/Users/Master/Downloads/today-todo_1.html">오늘의 할 일 앱 열기</a>
+      <h3>1. 오늘의 할 일 만들기</h3>
+
+      <p>
+        하루 동안 해야 할 일을 날짜별로 기록하고,
+        학업과 일상으로 나누어 관리하는 앱입니다.
+        완료 여부, 진행률, 전체·남은·완료 개수를
+        한눈에 확인할 수 있습니다.
+      </p>
+
+      <!-- 오늘의 할 일 앱 하이퍼링크 -->
+      <a
+        class="link"
+        href="./today-todo_1.html"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        오늘의 할 일 앱 열기
+      </a>
+
     </article>
   </section>
+
 </main>
 
 <footer>
-  <p>제작자: 이주호 | 바이브 코딩으로 제작한 개인 홈페이지</p>
+  <p>
+    제작자: 이주호 | 바이브 코딩으로 제작한 개인 홈페이지
+  </p>
 </footer>
 
 </body>
