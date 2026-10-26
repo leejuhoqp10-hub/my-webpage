@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>디지털 도장 & 학급 스티커 생성기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=East+Sea+Dokdo&family=Gaegu:wght@400;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Nanum+Brush+Script&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Pen+Script&family=Noto+Serif+KR:wght@400;600;700;900&family=Single+Day&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Nanum Gothic', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        /* 폰트 적용 클래스들 */
+        .font-noto-myeongjo { font-family: 'Noto Serif KR', serif; }
+        .font-nanum-myeongjo { font-family: 'Nanum Myeongjo', serif; }
+        .font-gowun-batang { font-family: 'Gowun Batang', serif; }
+        .font-black-han { font-family: 'Black Han Sans', sans-serif; }
+        .font-dokdo { font-family: 'East Sea Dokdo', cursive; }
+        .font-nanum-brush { font-family: 'Nanum Brush Script', cursive; }
+        .font-nanum-pen { font-family: 'Nanum Pen Script', cursive; }
+        .font-gaegu { font-family: 'Gaegu', cursive; }
+        .font-single-day { font-family: 'Single Day', cursive; }
+        
+        /* 캔버스 체커보드 배경 (투명 배경 시각화용) */
+        .checkerboard {
+            background-color: #ffffff;
+            background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+                              linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+                              linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 헤더 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-red-200">
+                    <i class="fa-solid font-serif">印</i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">교사·사무직 디지털 도장 스튜디오</h1>
+                    <p class="text-xs text-slate-500">공문서, 평가표, 학급 학습지용 고해상도 PNG 생성기</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
+                <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                100% 브라우저 처리 (서버 저장 없음·상업용 무료 폰트)
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+
+        <!-- 탭 메뉴 Nav -->
+        <div class="flex border-b border-slate-200 bg-white rounded-t-xl p-1 shadow-sm gap-1">
+            <button id="tab-stamp" onclick="switchTab('stamp')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all bg-red-50 text-red-700 shadow-sm">
+                <i class="fa-solid fa-stamp text-red-600"></i>
+                <span>1. 디지털 인장/도장</span>
+            </button>
+            <button id="tab-sticker" onclick="switchTab('sticker')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-icons text-amber-500"></i>
+                <span>2. 우리반 스티커·로고</span>
+            </button>
+            <button id="tab-sign" onclick="switchTab('sign')" class="tab-btn flex-1 py-3 px-4 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-signature text-indigo-600"></i>
+                <span>3. 커스텀 서명(사인)</span>
+            </button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: 디지털 도장 생성기                  -->
+        <!-- ========================================== -->
+        <div id="section-stamp" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- 설정 옵션 패널 -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+                <h2 class="text-base font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-red-600"></i> 도장 옵션 설정
+                </h2>
+
+                <!-- 1. 이름 입력 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">성명 / 문구 입력</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="stamp-name" value="홍길동" maxlength="8" placeholder="예: 홍길동" 
+                            class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                        <button onclick="autoAddIn()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap">
+                            '+인' 붙이기
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">* 3글자 입력 후 '+인' 클릭 시 '홍길동인' 4글자 형태로 자동 변경됩니다.</p>
+                </div>
+
+                <!-- 2. 도장 모양 선택 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">도장 형태 및 배열</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setStampShape('circle')" id="shape-circle" class="shape-btn active border-2 border-red-500 bg-red-50 p-2 rounded-lg text-center text-xs font-semibold text-slate-700 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 border-2 border-red-600 rounded-full flex items-center justify-center text-[10px] text-red-600">印</div>
+                            원형 (기본)
+                        </button>
+                        <button type="button" onclick="setStampShape('square')" id="shape-square" class="shape-btn border border-slate-200 p-2 rounded-lg text-center text-xs font-semibold text-slate-700 flex flex-col items-center gap-1 hover:border-slate-300">
+                            <div class="w-6 h-6 border-2 border-slate-600 flex items-center justify-center text-[10px] text-slate-600">印</div>
+                            직사각형
+                        </button>
+                        <button type="button" onclick="setStampShape('rounded-square')" id="shape-rounded-square" class="shape-btn border border-slate-200 p-2 rounded-lg text-center text-xs font-semibold text-slate-700 flex flex-col items-center gap-1 hover:border-slate-300">
+                            <div class="w-6 h-6 border-2 border-slate-600 rounded-md flex items-center justify-center text-[10px] text-slate-600">印</div>
+                            둥근사각
+                        </button>
+                        <button type="button" onclick="setStampShape('oval')" id="shape-oval" class="shape-btn border border-slate-200 p-2 rounded-lg text-center text-xs font-semibold text-slate-700 flex flex-col items-center gap-1 hover:border-slate-300">
+                            <div class="w-6 h-4 border-2 border-slate-600 rounded-full flex items-center justify-center text-[9px] text-slate-600">印</div>
+                            타원형(타인)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. 폰트 선택 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">한글 폰트 (저작권 무료)</label>
+                    <select id="stamp-font" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                        <option value="'Noto Serif KR', serif" class="font-noto-myeongjo">노토 서리프 (정갈한 명조체)</option>
+                        <option value="'Nanum Myeongjo', serif" class="font-nanum-myeongjo">나눔명조 (전통 공문서용)</option>
+                        <option value="'Gowun Batang', serif" class="font-gowun-batang">고운바탕 (부드러운 정체)</option>
+                        <option value="'Black Han Sans', sans-serif" class="font-black-han">블랙한산 (선명한 두꺼운 목도장)</option>
+                        <option value="'Nanum Brush Script', cursive" class="font-nanum-brush">나눔붓글씨 (자연스러운 붓인장)</option>
+                        <option value="'East Sea Dokdo', cursive" class="font-dokdo">독도체 (개성있는 손글씨)</option>
+                        <option value="'Single Day', cursive" class="font-single-day">싱글데이 (귀여운 캐주얼 도장)</option>
+                    </select>
+                </div>
+
+                <!-- 4. 색상 및 스타일 상세 세팅 -->
+                <div class="space-y-3 pt-2 border-t">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-700">인장 색상</label>
+                        <div class="flex gap-2 items-center">
+                            <button type="button" onclick="setStampColor('#dc2626')" class="w-6 h-6 rounded-full bg-red-600 border border-slate-300 ring-2 ring-offset-1 ring-red-600"></button>
+                            <button type="button" onclick="setStampColor('#b91c1c')" class="w-6 h-6 rounded-full bg-red-700 border border-slate-300"></button>
+                            <button type="button" onclick="setStampColor('#991b1b')" class="w-6 h-6 rounded-full bg-red-800 border border-slate-300"></button>
+                            <button type="button" onclick="setStampColor('#000000')" class="w-6 h-6 rounded-full bg-black border border-slate-300"></button>
+                            <input type="color" id="stamp-color-custom" value="#dc2626" class="w-6 h-6 rounded cursor-pointer border-0">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                            <span>테두리 두께</span>
+                            <span id="border-val">12px</span>
+                        </div>
+                        <input type="range" id="stamp-border-width" min="2" max="30" value="12" class="w-full accent-red-600">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                            <span>실제 도장 느낌 (인쇄 빈티지 효과)</span>
+                            <span id="rough-val">중간</span>
+                        </div>
+                        <input type="range" id="stamp-texture" min="0" max="10" value="3" class="w-full accent-red-600">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 미리보기 및 다운로드 영역 -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-between min-h-[460px]">
+                <div class="w-full flex items-center justify-between border-b pb-3 mb-4">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-eye"></i> 실시간 도장 미리보기
+                    </span>
+                    <span class="text-xs text-slate-400">배경: 투명 (PNG 저장)</span>
+                </div>
+
+                <!-- Canvas Wrapper -->
+                <div class="checkerboard p-8 rounded-xl border border-slate-200 flex items-center justify-center my-auto shadow-inner">
+                    <canvas id="stamp-canvas" width="300" height="300" class="max-w-full h-auto drop-shadow-sm"></canvas>
+                </div>
+
+                <!-- 다운로드 컨트롤 -->
+                <div class="w-full pt-4 border-t mt-4 space-y-3">
+                    <div class="flex items-center justify-between text-xs text-slate-600">
+                        <label class="font-bold">저장 해상도(크기):</label>
+                        <select id="stamp-size-select" class="px-2 py-1 border rounded text-xs">
+                            <option value="150">150 x 150 px (기본 문서용)</option>
+                            <option value="300" selected>300 x 300 px (고해상도)</option>
+                            <option value="600">600 x 600 px (초고해상도 출력용)</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadStamp()" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md shadow-red-200 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-download"></i> 투명 배경 PNG 도장 다운로드
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: 우리반 스티커 & 학급 로고          -->
+        <!-- ========================================== -->
+        <div id="section-sticker" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start hidden">
+            <!-- 스티커 옵션 패널 -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+                <h2 class="text-base font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 학급 스티커·로고 설정
+                </h2>
+
+                <!-- 1. 문구 설정 -->
+                <div class="space-y-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">상단/메인 문구</label>
+                        <input type="text" id="sticker-text-main" value="참 잘했어요!" maxlength="15" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">하단 서브 문구 (학급명 등)</label>
+                        <input type="text" id="sticker-text-sub" value="3학년 1반 담당교사" maxlength="20" 
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 2. 이모지/아이콘 선택 -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">중앙 아이콘 / 이모지</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="sticker-icon" value="⭐" maxlength="2" class="w-16 px-3 py-2 border border-slate-300 rounded-lg text-center text-lg">
+                        <div class="flex-1 flex gap-1 overflow-x-auto py-1">
+                            <button type="button" onclick="setStickerIcon('⭐')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">⭐</button>
+                            <button type="button" onclick="setStickerIcon('❤️')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">❤️</button>
+                            <button type="button" onclick="setStickerIcon('👍')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">👍</button>
+                            <button type="button" onclick="setStickerIcon('🌸')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">🌸</button>
+                            <button type="button" onclick="setStickerIcon('👑')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">👑</button>
+                            <button type="button" onclick="setStickerIcon('🍀')" class="px-2.5 py-1 bg-slate-100 rounded hover:bg-amber-100 text-sm">🍀</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 스티커 테마 및 글씨체 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">스티커 글씨체</label>
+                        <select id="sticker-font" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                            <option value="'Single Day', cursive" class="font-single-day" selected>싱글데이 (아기자기)</option>
+                            <option value="'Gaegu', cursive" class="font-gaegu">개구체 (손글씨)</option>
+                            <option value="'Nanum Pen Script', cursive" class="font-nanum-pen">나눔펜체</option>
+                            <option value="'Black Han Sans', sans-serif" class="font-black-han">블랙한산 (강조형)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">테마 컬러</label>
+                        <select id="sticker-color-theme" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                            <option value="#f59e0b">골드 옐로우</option>
+                            <option value="#ef4444">로즈 레드</option>
+                            <option value="#3b82f6">스카이 블루</option>
+                            <option value="#10b981">에메랄드 그린</option>
+                            <option value="#8b5cf6">퍼플 바이올렛</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. 모양 및 점선 테두리 -->
+                <div class="flex gap-4 items-center">
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                        <input type="checkbox" id="sticker-dashed" checked class="rounded text-amber-500 focus:ring-amber-400">
+                        스티커 점선 재단선 표시
+                    </label>
+                </div>
+            </div>
+
+            <!-- 미리보기 및 다운로드 -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-between min-h-[460px]">
+                <div class="w-full flex items-center justify-between border-b pb-3 mb-4">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-eye"></i> 학급 스티커 미리보기
+                    </span>
+                    <span class="text-xs text-slate-400">학습지/칭찬판용 PNG</span>
+                </div>
+
+                <div class="checkerboard p-8 rounded-xl border border-slate-200 flex items-center justify-center my-auto shadow-inner">
+                    <canvas id="sticker-canvas" width="320" height="320" class="max-w-full h-auto drop-shadow-md"></canvas>
+                </div>
+
+                <div class="w-full pt-4 border-t mt-4">
+                    <button onclick="downloadSticker()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md shadow-amber-200 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-download"></i> 투명 배경 스티커 PNG 다운로드
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: 커스텀 서명 (수동 드로잉 / 자동 생성) -->
+        <!-- ========================================== -->
+        <div id="section-sign" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start hidden">
+            <!-- 서명 모드 및 컨트롤 -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5">
+                <h2 class="text-base font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-nib text-indigo-600"></i> 디지털 서명(사인) 만들기
+                </h2>
+
+                <!-- 모드 전환 (자유 그리기 vs 자동 서명 생성) -->
+                <div class="flex bg-slate-100 p-1 rounded-lg">
+                    <button type="button" id="sign-mode-draw-btn" onclick="setSignMode('draw')" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-white text-slate-800 shadow-sm">
+                        <i class="fa-solid fa-hand-pointer mr-1"></i> 직접 그리프/마우스
+                    </button>
+                    <button type="button" id="sign-mode-auto-btn" onclick="setSignMode('auto')" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 정갈한 자동 서명
+                    </button>
+                </div>
+
+                <!-- 직접 그리기 옵션 -->
+                <div id="sign-draw-controls" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">펜 두께</label>
+                        <input type="range" id="sign-stroke-width" min="2" max="12" value="4" class="w-full accent-indigo-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">펜 색상</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="setSignColor('#000000')" class="w-6 h-6 rounded-full bg-black border border-slate-300"></button>
+                            <button type="button" onclick="setSignColor('#1e40af')" class="w-6 h-6 rounded-full bg-blue-800 border border-slate-300"></button>
+                            <button type="button" onclick="setSignColor('#dc2626')" class="w-6 h-6 rounded-full bg-red-600 border border-slate-300"></button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="clearSignCanvas()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> 서명 다시 그리기 (지우기)
+                    </button>
+                </div>
+
+                <!-- 자동 생성 옵션 -->
+                <div id="sign-auto-controls" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">서명 이름 입력</label>
+                        <input type="text" id="sign-auto-text" value="홍길동" maxlength="10" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">서명 스타일 폰트</label>
+                        <select id="sign-auto-font" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs">
+                            <option value="'Nanum Brush Script', cursive" class="font-nanum-brush">자연스러운 붓서명</option>
+                            <option value="'East Sea Dokdo', cursive" class="font-dokdo">흘림 필기체</option>
+                            <option value="'Nanum Pen Script', cursive" class="font-nanum-pen">깔끔한 펜서명</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 서명 미리보기/캔버스 -->
+            <div class="lg:col-span-7 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-between min-h-[460px]">
+                <div class="w-full flex items-center justify-between border-b pb-3 mb-4">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-signature"></i> 서명 패드 및 미리보기
+                    </span>
+                    <span class="text-xs text-slate-400">터치/마우스 지원</span>
+                </div>
+
+                <div class="checkerboard p-4 rounded-xl border border-slate-200 flex items-center justify-center my-auto shadow-inner w-full max-w-md">
+                    <canvas id="sign-canvas" width="400" height="200" class="w-full h-auto bg-transparent cursor-crosshair border border-dashed border-slate-300 rounded-lg"></canvas>
+                </div>
+
+                <div class="w-full pt-4 border-t mt-4">
+                    <button onclick="downloadSign()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-download"></i> 투명 배경 서명 PNG 다운로드
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        <p>본 앱은 저작권 무료 라이선스 폰트를 사용하며, 생성된 이미지는 공문서 및 개인용/상업용으로 자유롭게 이용 가능합니다.</p>
+    </footer>
+
+    <!-- 자바스크립트 로직 -->
+    <script>
+        // 현재 활성화된 탭
+        let currentTab = 'stamp';
+        let stampShape = 'circle';
+        let stampColor = '#dc2626';
+
+        // 캔버스 객체들
+        let stampCanvas, stampCtx;
+        let stickerCanvas, stickerCtx;
+        let signCanvas, signCtx;
+
+        // 서명 관련 상태
+        let isDrawing = false;
+        let signMode = 'draw'; // 'draw' 또는 'auto'
+        let signColor = '#000000';
+
+        window.onload = function() {
+            // 캔버스 초기화
+            stampCanvas = document.getElementById('stamp-canvas');
+            stampCtx = stampCanvas.getContext('2d');
+
+            stickerCanvas = document.getElementById('sticker-canvas');
+            stickerCtx = stickerCanvas.getContext('2d');
+
+            signCanvas = document.getElementById('sign-canvas');
+            signCtx = signCanvas.getContext('2d');
+
+            // 이벤트 리스너 등록
+            initStampEvents();
+            initStickerEvents();
+            initSignEvents();
+
+            // 폰트 로딩 대기 후 첫 렌더링
+            document.fonts.ready.then(() => {
+                renderStamp();
+                renderSticker();
+                renderAutoSign();
+            });
+        };
+
+        // ==========================================
+        // 탭 전환 기능
+        // ==========================================
+        function switchTab(tabName) {
+            currentTab = tabName;
+            ['stamp', 'sticker', 'sign'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const sec = document.getElementById(`section-${t}`);
+                if (t === tabName) {
+                    sec.classList.remove('hidden');
+                    btn.className = "tab-btn flex-1 py-3 px-4 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all bg-red-50 text-red-700 shadow-sm border border-red-100";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "tab-btn flex-1 py-3 px-4 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all text-slate-600 hover:bg-slate-50";
+                }
+            });
+
+            // 탭 전환시 해당 캔버스 재렌더링
+            if(tabName === 'stamp') renderStamp();
+            if(tabName === 'sticker') renderSticker();
+            if(tabName === 'sign' && signMode === 'auto') renderAutoSign();
+        }
+
+        // ==========================================
+        // TAB 1: 디지털 도장 로직
+        // ==========================================
+        function initStampEvents() {
+            document.getElementById('stamp-name').addEventListener('input', renderStamp);
+            document.getElementById('stamp-font').addEventListener('change', renderStamp);
+            document.getElementById('stamp-border-width').addEventListener('input', (e) => {
+                document.getElementById('border-val').innerText = e.target.value + 'px';
+                renderStamp();
+            });
+            document.getElementById('stamp-texture').addEventListener('input', (e) => {
+                const v = e.target.value;
+                document.getElementById('rough-val').innerText = v == 0 ? '없음(깔끔)' : (v < 5 ? '약하게' : '강하게');
+                renderStamp();
+            });
+            document.getElementById('stamp-color-custom').addEventListener('input', (e) => {
+                stampColor = e.target.value;
+                renderStamp();
+            });
+        }
+
+        function autoAddIn() {
+            const input = document.getElementById('stamp-name');
+            let val = input.value.trim();
+            if (val.length === 3 && !val.endsWith('인')) {
+                input.value = val + '인';
+            } else if (val.length === 2 && !val.endsWith('인')) {
+                input.value = val + '인';
+            }
+            renderStamp();
+        }
+
+        function setStampShape(shape) {
+            stampShape = shape;
+            document.querySelectorAll('.shape-btn').forEach(btn => {
+                btn.classList.remove('border-red-500', 'bg-red-50');
+                btn.classList.add('border-slate-200');
+            });
+            const activeBtn = document.getElementById(`shape-${shape}`);
+            activeBtn.classList.remove('border-slate-200');
+            activeBtn.classList.add('border-red-500', 'bg-red-50');
+            renderStamp();
+        }
+
+        function setStampColor(color) {
+            stampColor = color;
+            document.getElementById('stamp-color-custom').value = color;
+            renderStamp();
+        }
+
+        function renderStamp() {
+            if (!stampCtx) return;
+
+            const canvas = stampCanvas;
+            const ctx = stampCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 캔버스 초기화 (투명)
+            ctx.clearRect(0, 0, w, h);
+
+            const name = document.getElementById('stamp-name').value.trim() || '홍길동인';
+            const font = document.getElementById('stamp-font').value;
+            const borderWidth = parseInt(document.getElementById('stamp-border-width').value);
+            const textureIntensity = parseInt(document.getElementById('stamp-texture').value);
+
+            ctx.save();
+            ctx.strokeStyle = stampColor;
+            ctx.fillStyle = stampColor;
+            ctx.lineWidth = borderWidth;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const center = w / 2;
+            const padding = borderWidth / 2 + 10;
+
+            // 1. 외곽선 그리기
+            ctx.beginPath();
+            if (stampShape === 'circle') {
+                const radius = (w / 2) - padding;
+                ctx.arc(center, center, radius, 0, Math.PI * 2);
+            } else if (stampShape === 'square') {
+                const size = w - (padding * 2);
+                ctx.rect(padding, padding, size, size);
+            } else if (stampShape === 'rounded-square') {
+                const size = w - (padding * 2);
+                const r = 25; // 라운드 값
+                ctx.roundRect(padding, padding, size, size, r);
+            } else if (stampShape === 'oval') {
+                const radiusX = (w / 2) - padding - 20;
+                const radiusY = (h / 2) - padding;
+                ctx.ellipse(center, center, radiusX, radiusY, 0, 0, Math.PI * 2);
+            }
+            ctx.stroke();
+
+            // 2. 글자 배열 및 출력 로직
+            const len = name.length;
+            ctx.font = `bold 60px ${font}`;
+
+            if (len === 1) {
+                ctx.fillText(name, center, center);
+            } else if (len === 2) {
+                // 세로로 2글자
+                ctx.font = `bold 75px ${font}`;
+                ctx.fillText(name[0], center, center - 45);
+                ctx.fillText(name[1], center, center + 45);
+            } else if (len === 3) {
+                // 전형적인 3글자 도장 (우측 2글자, 좌측 1글자 또는 배치)
+                ctx.font = `bold 65px ${font}`;
+                ctx.fillText(name[0], center + 35, center - 40);
+                ctx.fillText(name[1], center + 35, center + 40);
+                ctx.fillText(name[2], center - 35, center);
+            } else if (len === 4) {
+                // 전형적인 4글자 도장 (우측 위->아래, 좌측 위->아래 표준 한국 인장 배치)
+                ctx.font = `bold 65px ${font}`;
+                ctx.fillText(name[0], center + 38, center - 38); // 오른쪽 위
+                ctx.fillText(name[1], center + 38, center + 38); // 오른쪽 아래
+                ctx.fillText(name[2], center - 38, center - 38); // 왼쪽 위
+                ctx.fillText(name[3], center - 38, center + 38); // 왼쪽 아래
+            } else {
+                // 5글자 이상은 자동 크기 조절 후 줄바꿈 배치
+                ctx.font = `bold ${Math.max(24, 180 / len)}px ${font}`;
+                ctx.fillText(name, center, center);
+            }
+
+            // 3. 빈티지 인쇄 질감 효과 (노이즈 구멍 마스크)
+            if (textureIntensity > 0) {
+                ctx.globalCompositeOperation = 'destination-out';
+                const count = textureIntensity * 120;
+                for (let i = 0; i < count; i++) {
+                    const rx = Math.random() * w;
+                    const ry = Math.random() * h;
+                    const rSize = Math.random() * 2 + 0.5;
+                    ctx.beginPath();
+                    ctx.arc(rx, ry, rSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function downloadStamp() {
+            const targetSize = parseInt(document.getElementById('stamp-size-select').value);
+            
+            // 고해상도 리사이징용 임시 캔버스
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = targetSize;
+            tempCanvas.height = targetSize;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.drawImage(stampCanvas, 0, 0, targetSize, targetSize);
+
+            const name = document.getElementById('stamp-name').value.trim() || '도장';
+            const link = document.createElement('a');
+            link.download = `디지털도장_${name}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+
+        // ==========================================
+        // TAB 2: 학급 스티커 로직
+        // ==========================================
+        function initStickerEvents() {
+            document.getElementById('sticker-text-main').addEventListener('input', renderSticker);
+            document.getElementById('sticker-text-sub').addEventListener('input', renderSticker);
+            document.getElementById('sticker-icon').addEventListener('input', renderSticker);
+            document.getElementById('sticker-font').addEventListener('change', renderSticker);
+            document.getElementById('sticker-color-theme').addEventListener('change', renderSticker);
+            document.getElementById('sticker-dashed').addEventListener('change', renderSticker);
+        }
+
+        function setStickerIcon(emoji) {
+            document.getElementById('sticker-icon').value = emoji;
+            renderSticker();
+        }
+
+        function renderSticker() {
+            if (!stickerCtx) return;
+
+            const canvas = stickerCanvas;
+            const ctx = stickerCtx;
+            const w = canvas.width;
+            const h = canvas.height;
+            const center = w / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const mainText = document.getElementById('sticker-text-main').value || '참 잘했어요!';
+            const subText = document.getElementById('sticker-text-sub').value || '우리반';
+            const icon = document.getElementById('sticker-icon').value || '⭐';
+            const font = document.getElementById('sticker-font').value;
+            const themeColor = document.getElementById('sticker-color-theme').value;
+            const isDashed = document.getElementById('sticker-dashed').checked;
+
+            ctx.save();
+
+            // 1. 배경 원 (약한 파스텔 톤)
+            ctx.beginPath();
+            ctx.arc(center, center, 140, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = themeColor;
+            ctx.stroke();
+
+            // 2. 점선 재단 가이드
+            if (isDashed) {
+                ctx.beginPath();
+                ctx.arc(center, center, 150, 0, Math.PI * 2);
+                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 3. 아이콘 그려주기
+            ctx.font = '60px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, center, center - 20);
+
+            // 4. 메인 텍스트
+            ctx.fillStyle = themeColor;
+            ctx.font = `bold 32px ${font}`;
+            ctx.fillText(mainText, center, center + 45);
+
+            // 5. 서브 텍스트
+            ctx.fillStyle = '#64748b';
+            ctx.font = `18px ${font}`;
+            ctx.fillText(subText, center, center + 85);
+
+            ctx.restore();
+        }
+
+        function downloadSticker() {
+            const link = document.createElement('a');
+            link.download = `학급스티커_${Date.now()}.png`;
+            link.href = stickerCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+
+        // ==========================================
+        // TAB 3: 커스텀 서명(사인) 로직
+        // ==========================================
+        function initSignEvents() {
+            // 마우스 & 터치 드로잉 이벤트
+            signCanvas.addEventListener('mousedown', startDrawing);
+            signCanvas.addEventListener('mousemove', draw);
+            signCanvas.addEventListener('mouseup', stopDrawing);
+            signCanvas.addEventListener('mouseleave', stopDrawing);
+
+            signCanvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = signCanvas.getBoundingClientRect();
+                startDrawing({ clientX: touch.clientX, clientY: touch.clientY });
+            });
+            signCanvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                draw({ clientX: touch.clientX, clientY: touch.clientY });
+            });
+            signCanvas.addEventListener('touchend', stopDrawing);
+
+            // 자동 서명 관련 컨트롤 이벤트
+            document.getElementById('sign-auto-text').addEventListener('input', renderAutoSign);
+            document.getElementById('sign-auto-font').addEventListener('change', renderAutoSign);
+        }
+
+        function setSignMode(mode) {
+            signMode = mode;
+            const drawBtn = document.getElementById('sign-mode-draw-btn');
+            const autoBtn = document.getElementById('sign-mode-auto-btn');
+            const drawControls = document.getElementById('sign-draw-controls');
+            const autoControls = document.getElementById('sign-auto-controls');
+
+            if (mode === 'draw') {
+                drawBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white text-slate-800 shadow-sm";
+                autoBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900";
+                drawControls.classList.remove('hidden');
+                autoControls.classList.add('hidden');
+                clearSignCanvas();
+            } else {
+                autoBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white text-slate-800 shadow-sm";
+                drawBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900";
+                autoControls.classList.remove('hidden');
+                drawControls.classList.add('hidden');
+                renderAutoSign();
+            }
+        }
+
+        function setSignColor(color) {
+            signColor = color;
+        }
+
+        function getSignPos(e) {
+            const rect = signCanvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (signCanvas.width / rect.width),
+                y: (e.clientY - rect.top) * (signCanvas.height / rect.height)
+            };
+        }
+
+        function startDrawing(e) {
+            if (signMode !== 'draw') return;
+            isDrawing = true;
+            const pos = getSignPos(e);
+            signCtx.beginPath();
+            signCtx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing || signMode !== 'draw') return;
+            const pos = getSignPos(e);
+            const strokeWidth = document.getElementById('sign-stroke-width').value;
+
+            signCtx.lineWidth = strokeWidth;
+            signCtx.lineCap = 'round';
+            signCtx.lineJoin = 'round';
+            signCtx.strokeStyle = signColor;
+
+            signCtx.lineTo(pos.x, pos.y);
+            signCtx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearSignCanvas() {
+            signCtx.clearRect(0, 0, signCanvas.width, signCanvas.height);
+        }
+
+        function renderAutoSign() {
+            if (signMode !== 'auto') return;
+            clearSignCanvas();
+
+            const text = document.getElementById('sign-auto-text').value.trim() || '홍길동';
+            const font = document.getElementById('sign-auto-font').value;
+
+            signCtx.save();
+            signCtx.font = `65px ${font}`;
+            signCtx.fillStyle = '#000000';
+            signCtx.textAlign = 'center';
+            signCtx.textBaseline = 'middle';
+            
+            // 약간의 기울임 효과로 사인 느낌 추가
+            signCtx.transform(1, 0, -0.15, 1, 0, 0);
+            signCtx.fillText(text, signCanvas.width / 2 + 15, signCanvas.height / 2);
+            signCtx.restore();
+        }
+
+        function downloadSign() {
+            const link = document.createElement('a');
+            link.download = `디지털서명_${Date.now()}.png`;
+            link.href = signCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
