@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>조선시대 역사 연표</title>
+<style>
+:root{--ink:#1d2433;--bg:#f2f5fa;--line:#c6d0e0;--e0:#18877a;--e1:#d9731a;--e2:#7b4fd0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding:20px 0 280px}
+header,.bar{max-width:900px;margin:0 auto;padding:0 16px}
+h1{margin:0;font-size:30px;letter-spacing:-.02em}
+header p{margin:4px 0 14px;color:#4f5b70}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.mode{margin-left:auto;display:flex;gap:0;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+.mode button{font:inherit;font-size:15px;border:0;background:#fff;padding:8px 14px;cursor:pointer;min-height:44px}
+.mode button[aria-pressed=true]{background:var(--ink);color:#fff}
+.scroller{overflow-x:auto;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
+.track{position:relative;height:440px}
+.axis{position:absolute;left:0;right:0;top:220px;height:6px;margin-top:-3px;background:linear-gradient(90deg,var(--e0),var(--e1),var(--e2));border-radius:3px}
+.tick{position:absolute;top:226px;width:0;font-size:13px;color:#7a869b}
+.tick::before{content:"";position:absolute;left:0;top:-10px;height:12px;border-left:2px solid #aab6cb}
+.tick span{position:absolute;transform:translateX(-50%);top:6px;white-space:nowrap}
+.ev{position:absolute;top:220px;width:0;height:0;border:0;padding:0;background:none;cursor:pointer;transition:left .4s ease}
+.dot{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:var(--c);border:4px solid #fff;box-shadow:0 0 0 2px var(--c);transition:transform .3s}
+.lab{position:absolute;left:-58px;width:116px;text-align:center;background:#fff;border:2px solid var(--c);border-radius:12px;padding:6px 6px 8px;font:inherit;color:var(--ink);transition:transform .3s,box-shadow .3s;line-height:1.3}
+.lab b{display:block;color:var(--c);font-size:15px}
+.lab span{font-size:15px;font-weight:600}
+.lab::after{content:"";position:absolute;left:50%;border-left:2px solid var(--c);height:var(--stem)}
+.up .lab{bottom:calc(26px + var(--lvl)*70px)}
+.up .lab::after{top:100%}
+.dn .lab{top:calc(26px + var(--lvl)*70px)}
+.dn .lab::after{bottom:100%}
+.ev{--stem:calc(26px + 0px)}
+.ev:focus-visible .lab,.ev:focus-visible .dot{outline:4px solid #ffb703;outline-offset:2px}
+.track.has-sel .ev:not(.sel){opacity:.55}
+.ev.sel{z-index:3}
+.ev.sel .dot{transform:scale(1.6)}
+.ev.sel .lab{transform:scale(1.14);box-shadow:0 6px 18px rgba(0,0,0,.22);background:var(--c);color:#fff}
+.ev.sel .lab b{color:#fff}
+.ev.sel .lab::after{border-color:var(--c)}
+.sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,110%);width:min(680px,100%);background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.2);padding:18px 20px 20px;transition:transform .35s ease;z-index:10;border-top:6px solid var(--c,#999)}
+.sheet.open{transform:translate(-50%,0)}
+.sheet .era{display:inline-block;padding:3px 10px;border-radius:999px;color:#fff;font-size:14px;background:var(--c,#999)}
+.sheet h2{margin:8px 0 8px;font-size:27px;letter-spacing:-.02em}
+.sheet h2 small{font-size:18px;color:#5a667c;font-weight:600;margin-left:6px}
+.sheet p{margin:0 0 10px;font-size:19px;line-height:1.65}
+.facts{font-size:16px;color:#46536a;background:var(--bg);border-radius:10px;padding:8px 12px;margin-bottom:12px}
+.nav{display:flex;gap:8px}
+.nav button{font:inherit;font-size:18px;font-weight:700;min-height:52px;border-radius:12px;border:2px solid var(--line);background:#fff;cursor:pointer;flex:1}
+.nav .nx{background:var(--ink);color:#fff;border-color:var(--ink)}
+.nav .cl{flex:0 0 56px}
+.nav button:disabled{opacity:.35;cursor:default}
+button:focus-visible{outline:4px solid #ffb703;outline-offset:2px}
+.hint{text-align:center;color:#5a667c;margin:10px 16px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){h1{font-size:24px}.sheet h2{font-size:23px}.sheet p{font-size:17px}.mode{margin-left:0}}
+</style>
+</head>
+<body>
+<header><h1>📜 조선시대 역사 연표</h1><p>동그라미나 이름표를 누르면 사건을 쉽게 설명해 줘요. 옆으로 밀어서 시간 여행을 해 보세요!</p></header>
+<div class="bar">
+  <div class="legend"><span><i style="background:var(--e0)"></i>조선 전기</span><span><i style="background:var(--e1)"></i>조선 중·후기</span><span><i style="background:var(--e2)"></i>조선 말기</span></div>
+  <div class="mode" role="group" aria-label="간격 보기"><button id="mProp" aria-pressed="true">시간만큼 간격</button><button id="mEq" aria-pressed="false">같은 간격</button></div>
+</div>
+<div class="scroller" id="scroller"><div class="track" id="track"><div class="axis"></div></div></div>
+<p class="hint" id="hint">👆 사건을 눌러 보세요. 키보드 ← → 로도 옮길 수 있어요.</p>
+
+<section class="sheet" id="sheet" aria-live="polite" aria-label="사건 설명">
+  <span class="era" id="sEra"></span>
+  <h2 id="sTitle"></h2>
+  <p id="sDesc"></p>
+  <div class="facts" id="sFacts"></div>
+  <div class="nav"><button id="prev">◀ 이전 사건</button><button id="next" class="nx">다음 사건 ▶</button><button id="close" class="cl" aria-label="닫기">✕</button></div>
+</section>
+
+<script>
+var ERAS=[{n:"조선 전기",c:"#18877a"},{n:"조선 중·후기",c:"#d9731a"},{n:"조선 말기",c:"#7b4fd0"}];
+var EV=[
+ {y:1392,t:"조선 건국",e:0,d:"이성계 장군이 고려를 끝내고 새로운 나라 조선을 세웠어요. 조선은 500년이 넘게 이어졌고, 나중에 한양(지금의 서울)을 수도로 삼았어요."},
+ {y:1418,t:"세종대왕 즉위",e:0,d:"세종대왕이 조선의 네 번째 임금이 되었어요. 백성을 아끼고, 과학과 문화를 크게 발전시킨 훌륭한 임금이에요."},
+ {y:1443,t:"한글 창제",e:0,d:"세종대왕이 누구나 쉽게 배울 수 있는 우리 글자, 한글을 만들었어요. 3년 뒤인 1446년에 온 나라에 널리 알렸어요."},
+ {y:1592,t:"임진왜란",e:1,d:"일본이 조선을 쳐들어와서 전쟁이 일어났어요. 이순신 장군과 백성들이 힘을 모아 나라를 지켜 냈어요."},
+ {y:1636,t:"병자호란",e:1,d:"청나라가 조선에 쳐들어온 전쟁이에요. 인조 임금과 신하들이 남한산성에서 버텼지만 힘든 시간을 겪었어요."},
+ {y:1724,t:"영조의 탕평책",e:1,d:"영조 임금은 신하들이 편을 갈라 싸우지 않도록, 능력 있는 사람을 골고루 뽑는 탕평책을 펼쳤어요. 탕평은 ‘다투지 않고 고르게’라는 뜻이에요."},
+ {y:1794,t:"수원 화성 축조",e:1,d:"정조 임금이 수원에 튼튼하고 아름다운 성, 화성을 쌓기 시작했어요. 거중기 같은 똑똑한 도구도 사용했어요."},
+ {y:1866,t:"병인양요",e:2,d:"프랑스 군대가 강화도에 쳐들어왔어요. 조선 군대가 맞서 싸워서 프랑스 군대를 물리쳤어요."},
+ {y:1894,t:"동학농민운동",e:2,d:"나쁜 관리들이 세금을 너무 많이 걷자, 농민들이 힘들게 살지 않도록 정치를 바로잡으라고 일어섰어요."},
+ {y:1897,t:"대한제국 선포",e:2,d:"고종 임금이 나라 이름을 ‘대한제국’으로 바꾸고 황제가 되었어요. 우리나라가 스스로 힘을 키우겠다는 뜻이었어요."}
+];
+var $=function(i){return document.getElementById(i)};
+var PAD=120, SCALE=4, GAP=190, mode="prop", sel=null, els=[], xs=[];
+var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function layout(){
+  var track=$("track");
+  xs=EV.map(function(e,i){return mode==="prop"?PAD+(e.y-EV[0].y)*SCALE:PAD+i*GAP});
+  track.style.width=(xs[xs.length-1]+PAD)+"px";
+  track.querySelectorAll(".tick").forEach(function(t){t.remove()});
+  if(mode==="prop"){for(var y=1400;y<=1900;y+=100){var t=document.createElement("div");t.className="tick";t.style.left=(PAD+(y-EV[0].y)*SCALE)+"px";t.innerHTML="<span>"+y+"년</span>";track.appendChild(t)}}
+  els.forEach(function(b,i){b.style.left=xs[i]+"px"});
+}
+
+function build(){
+  var track=$("track"), seen={};
+  EV.forEach(function(e,i){
+    var n=seen[e.y]||0; seen[e.y]=n+1;          /* 같은 해 사건: 위·아래 번갈아, 3개째부터 한 칸 더 멀리 */
+    var up=((i+n)%2===0), lvl=Math.floor(n/2);
+    var b=document.createElement("button");
+    b.className="ev "+(up?"up":"dn"); b.type="button";
+    b.style.setProperty("--c",ERAS[e.e].c); b.style.setProperty("--lvl",lvl);
+    b.setAttribute("aria-label",e.y+"년 "+e.t);
+    b.innerHTML='<span class="dot"></span><span class="lab"><b>'+e.y+'년</b><span>'+e.t+'</span></span>';
+    b.onclick=function(){select(i)};
+    track.appendChild(b); els.push(b);
+  });
+  layout();
+}
+
+function center(i){
+  var s=$("scroller"), left=xs[i]-s.clientWidth/2;
+  s.scrollTo({left:Math.max(0,left),behavior:reduce?"auto":"smooth"});
+}
+
+function select(i){
+  sel=i; var e=EV[i], c=ERAS[e.e].c;
+  els.forEach(function(b,k){b.classList.toggle("sel",k===i)});
+  $("track").classList.add("has-sel");
+  var sh=$("sheet"); sh.style.setProperty("--c",c); sh.classList.add("open");
+  $("sEra").textContent=ERAS[e.e].n;
+  $("sTitle").innerHTML=e.t+"<small>"+e.y+"년</small>";
+  $("sDesc").textContent=e.d;
+  var f="🕐 조선이 세워진 지 "+(e.y-EV[0].y)+"년이 지난 때예요.";
+  if(i>0) f+="<br>⏳ 앞의 사건(‘"+EV[i-1].t+"’)에서 "+(e.y-EV[i-1].y)+"년 뒤에 일어났어요.";
+  $("sFacts").innerHTML=f;
+  $("prev").disabled=(i===0); $("next").disabled=(i===EV.length-1);
+  $("hint").style.display="none";
+  center(i);
+}
+function closeSheet(){$("sheet").classList.remove("open");sel=null;els.forEach(function(b){b.classList.remove("sel")});$("track").classList.remove("has-sel")}
+
+$("prev").onclick=function(){if(sel>0)select(sel-1)};
+$("next").onclick=function(){if(sel<EV.length-1)select(sel+1)};
+$("close").onclick=closeSheet;
+document.addEventListener("keydown",function(ev){
+  if(ev.key==="ArrowRight"){select(sel===null?0:Math.min(EV.length-1,sel+1))}
+  else if(ev.key==="ArrowLeft"&&sel!==null){select(Math.max(0,sel-1))}
+  else if(ev.key==="Escape"){closeSheet()}
+});
+function setMode(m){mode=m;$("mProp").setAttribute("aria-pressed",m==="prop");$("mEq").setAttribute("aria-pressed",m==="eq");layout();if(sel!==null)center(sel)}
+$("mProp").onclick=function(){setMode("prop")};
+$("mEq").onclick=function(){setMode("eq")};
+build();
+</script>
+</body>
+</html>
