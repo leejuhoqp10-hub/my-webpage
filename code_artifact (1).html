@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신나는 동물 짝맞추기 카드 게임</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Single Day & Jua) -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Single+Day&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            background: linear-gradient(135deg, #FFF9E6 0%, #E8F5E9 50%, #E3F2FD 100%);
+            touch-action: manipulation;
+        }
+
+        /* 3D Flip Card Effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Card Back (Hidden pattern) */
+        .card-back {
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+            border: 4px solid #FFFFFF;
+            box-shadow: 0 8px 15px rgba(255, 154, 158, 0.3);
+        }
+
+        /* Card Front (Revealed Content) */
+        .card-front {
+            background: #FFFFFF;
+            transform: rotateY(180deg);
+            border: 4px solid #4ADE80;
+            box-shadow: 0 8px 15px rgba(74, 222, 128, 0.3);
+        }
+
+        /* Matched Animation */
+        .card.matched .card-front {
+            border-color: #FBBF24;
+            background: #FEF3C7;
+            animation: pulse-bounce 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-bounce {
+            0% { transform: rotateY(180deg) scale(1); }
+            100% { transform: rotateY(180deg) scale(1.05); }
+        }
+
+        /* Custom Wave Animation for Header Title */
+        .bounce-title {
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 text-gray-800 select-none">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-4xl text-center mb-4">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-amber-500 drop-shadow-md tracking-wider bounce-title mb-2">
+            🦁 신나는 짝맞추기 게임! 🐰
+        </h1>
+        <p class="text-lg sm:text-xl text-emerald-600 font-medium">카드를 뒤집어 같은 그림의 동물 짝을 찾아보세요!</p>
+    </header>
+
+    <!-- Scoreboard & Controls Bar -->
+    <main class="w-full max-w-3xl flex flex-col items-center gap-4">
+        <div class="w-full bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-5 shadow-lg border-4 border-yellow-200 flex flex-wrap items-center justify-around gap-3 text-center">
+            
+            <!-- Score Display -->
+            <div class="flex items-center gap-2 bg-amber-100 px-4 py-2 rounded-2xl border-2 border-amber-300">
+                <span class="text-2xl">⭐</span>
+                <div>
+                    <div class="text-xs text-amber-700 font-bold">점수</div>
+                    <div id="score" class="text-2xl font-black text-amber-600">0점</div>
+                </div>
+            </div>
+
+            <!-- Attempts Display -->
+            <div class="flex items-center gap-2 bg-indigo-100 px-4 py-2 rounded-2xl border-2 border-indigo-300">
+                <span class="text-2xl">🎯</span>
+                <div>
+                    <div class="text-xs text-indigo-700 font-bold">시도 횟수</div>
+                    <div id="attempts" class="text-2xl font-black text-indigo-600">0회</div>
+                </div>
+            </div>
+
+            <!-- Timer Display -->
+            <div class="flex items-center gap-2 bg-emerald-100 px-4 py-2 rounded-2xl border-2 border-emerald-300">
+                <span class="text-2xl">⏰</span>
+                <div>
+                    <div class="text-xs text-emerald-700 font-bold">경과 시간</div>
+                    <div id="timer" class="text-2xl font-black text-emerald-600">00:00</div>
+                </div>
+            </div>
+
+            <!-- Mute/Sound Toggle -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="bg-gray-100 hover:bg-gray-200 p-3 rounded-2xl border-2 border-gray-300 text-xl transition-transform active:scale-95" title="음소거 설정">
+                🔊
+            </button>
+
+            <!-- Reset Button -->
+            <button onclick="resetGame()" class="bg-gradient-to-r from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white font-extrabold px-5 py-2.5 rounded-2xl shadow-md border-b-4 border-rose-600 transition-all active:translate-y-1 active:border-b-0 flex items-center gap-2 text-lg">
+                <i class="fa-solid fa-rotate-right"></i> 다시 시작
+            </button>
+        </div>
+
+        <!-- Card Grid (4 columns, 3 rows) -->
+        <div id="gameGrid" class="w-full grid grid-cols-4 gap-3 sm:gap-4 p-3 bg-white/50 backdrop-blur-sm rounded-3xl border-4 border-emerald-200 shadow-inner min-h-[360px] sm:min-h-[440px]">
+            <!-- Cards will be generated by JS dynamically -->
+        </div>
+    </main>
+
+    <!-- Completion Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border-8 border-yellow-300 transform transition-all scale-95 animate-bounce-in">
+            <div class="text-6xl mb-3">🎉 👑 🎉</div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-amber-500 mb-2">축하합니다!</h2>
+            <p class="text-gray-600 text-lg mb-6">모든 동물 친구들의 짝을 찾았어요!</p>
+            
+            <div class="bg-amber-50 rounded-2xl p-4 mb-6 border-2 border-amber-200 space-y-2 text-left">
+                <div class="flex justify-between items-center text-lg">
+                    <span class="text-gray-600">🏆 최종 점수:</span>
+                    <span id="finalScore" class="font-black text-amber-600 text-xl">0점</span>
+                </div>
+                <div class="flex justify-between items-center text-lg">
+                    <span class="text-gray-600">🎯 총 시도 횟수:</span>
+                    <span id="finalAttempts" class="font-black text-indigo-600 text-xl">0회</span>
+                </div>
+                <div class="flex justify-between items-center text-lg">
+                    <span class="text-gray-600">⏱️ 소요 시간:</span>
+                    <span id="finalTime" class="font-black text-emerald-600 text-xl">0초</span>
+                </div>
+            </div>
+
+            <button onclick="closeModalAndReset()" class="w-full bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-extrabold text-xl py-4 rounded-2xl shadow-lg border-b-4 border-green-700 transition-all active:translate-y-1 active:border-b-0">
+                한 번 더 도전하기! 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-4 text-center text-emerald-800 text-sm font-bold opacity-80">
+        💡 초등학생 맞춤형 디지털 학습 교구 | 집중력 & 기억력 향상 게임
+    </footer>
+
+    <!-- Game Logic JavaScript -->
+    <script>
+        // Animal Card Data List (6 Pairs = 12 Cards)
+        const ANIMALS = [
+            { name: '사자', emoji: '🦁', color: '#FFF3C4' },
+            { name: '호랑이', emoji: '🐯', color: '#FFE0B2' },
+            { name: '토끼', emoji: '🐰', color: '#F8BBD0' },
+            { name: '곰', emoji: '🐻', color: '#D7CCC8' },
+            { name: '여우', emoji: '🦊', color: '#FFCCBC' },
+            { name: '판다', emoji: '🐼', color: '#E0E0E0' }
+        ];
+
+        // Game State Variables
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let score = 0;
+        let attempts = 0;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let isBoardLocked = false;
+        let soundEnabled = true;
+
+        // Audio Context (Web Audio API)
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Web Audio Synthesizer Sound Effects (No external audio file dependency)
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                if (type === 'flip') {
+                    // Quick pop sound
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+
+                } else if (type === 'match') {
+                    // Cheerful Arpeggio (C Major)
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                        gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.08);
+                        osc.stop(now + idx * 0.08 + 0.2);
+                    });
+
+                } else if (type === 'unmatch') {
+                    // Low Buzz
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+
+                } else if (type === 'victory') {
+                    // Fanfare Song Tone
+                    const fanfare = [
+                        { f: 523.25, d: 0.15 },
+                        { f: 659.25, d: 0.15 },
+                        { f: 783.99, d: 0.15 },
+                        { f: 1046.50, d: 0.4 }
+                    ];
+                    let delay = 0;
+                    fanfare.forEach(note => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(note.f, now + delay);
+                        gain.gain.setValueAtTime(0.3, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + delay + note.d);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + delay);
+                        osc.stop(now + delay + note.d);
+                        delay += note.d * 0.85;
+                    });
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        // Toggle Sound Mute
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggleBtn');
+            btn.innerHTML = soundEnabled ? '🔊' : '🔇';
+            btn.classList.toggle('bg-red-100', !soundEnabled);
+            btn.classList.toggle('border-red-300', !soundEnabled);
+        }
+
+        // Start / Reset Timer
+        function startTimer() {
+            stopTimer();
+            secondsElapsed = 0;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+            const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${mins}:${secs}`;
+        }
+
+        // Shuffle Array (Fisher-Yates)
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Initialize and Render Game Board
+        function resetGame() {
+            stopTimer();
+            matchedPairs = 0;
+            score = 0;
+            attempts = 0;
+            flippedCards = [];
+            isBoardLocked = false;
+
+            document.getElementById('score').innerText = '0점';
+            document.getElementById('attempts').innerText = '0회';
+            document.getElementById('successModal').classList.add('hidden');
+
+            // Create Pair Dataset (2 of each animal)
+            const deck = shuffle([...ANIMALS, ...ANIMALS]).map((animal, index) => ({
+                id: index,
+                name: animal.name,
+                emoji: animal.emoji,
+                color: animal.color,
+                isFlipped: false,
+                isMatched: false
+            }));
+
+            cards = deck;
+            renderBoard();
+            startTimer();
+        }
+
+        // Render Cards to DOM
+        function renderBoard() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
+
+            cards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card perspective-1000 cursor-pointer h-24 sm:h-32 w-full';
+                cardEl.dataset.index = index;
+
+                cardEl.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-back">
+                            <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white/40 flex items-center justify-center border-2 border-white/60 text-pink-500 font-extrabold text-xl sm:text-2xl">
+                                ❓
+                            </div>
+                        </div>
+                        <div class="card-front" style="background-color: ${card.color}">
+                            <div class="flex flex-col items-center justify-center">
+                                <span class="text-4xl sm:text-6xl drop-shadow-sm transition-transform duration-300 hover:scale-110">${card.emoji}</span>
+                                <span class="text-xs sm:text-sm font-extrabold text-gray-700 mt-1 bg-white/80 px-2 py-0.5 rounded-full shadow-sm">${card.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                cardEl.addEventListener('click', () => handleCardClick(index, cardEl));
+                grid.appendChild(cardEl);
+            });
+        }
+
+        // Card Click Handler
+        function handleCardClick(index, cardEl) {
+            initAudio(); // Ensure audio context unlocks on first user touch
+
+            const card = cards[index];
+
+            // Prevent interaction if board locked, card already flipped, or already matched
+            if (isBoardLocked || card.isFlipped || card.isMatched) return;
+
+            // Flip Card
+            card.isFlipped = true;
+            cardEl.classList.add('flipped');
+            flippedCards.push({ index, card, el: cardEl });
+            playSound('flip');
+
+            // If two cards flipped, check match
+            if (flippedCards.length === 2) {
+                attempts++;
+                document.getElementById('attempts').innerText = `${attempts}회`;
+                checkMatch();
+            }
+        }
+
+        // Check if flipped cards match
+        function checkMatch() {
+            isBoardLocked = true;
+            const [card1, card2] = flippedCards;
+
+            if (card1.card.name === card2.card.name) {
+                // Match Found!
+                card1.card.isMatched = true;
+                card2.card.isMatched = true;
+
+                card1.el.classList.add('matched');
+                card2.el.classList.add('matched');
+
+                score += 100;
+                matchedPairs++;
+                document.getElementById('score').innerText = `${score}점`;
+
+                playSound('match');
+                flippedCards = [];
+                isBoardLocked = false;
+
+                // Check Game Completion
+                if (matchedPairs === ANIMALS.length) {
+                    setTimeout(handleGameSuccess, 600);
+                }
+            } else {
+                // Not Matched -> Wait 1 second and flip back
+                playSound('unmatch');
+                setTimeout(() => {
+                    card1.card.isFlipped = false;
+                    card2.card.isFlipped = false;
+                    card1.el.classList.remove('flipped');
+                    card2.el.classList.remove('flipped');
+
+                    flippedCards = [];
+                    isBoardLocked = false;
+                }, 1000);
+            }
+        }
+
+        // Game Victory Action
+        function handleGameSuccess() {
+            stopTimer();
+            playSound('victory');
+
+            // Trigger Confetti Blast
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+                // Secondary burst for fun
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 }
+                    });
+                    confetti({
+                        particleCount: 80,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 }
+                    });
+                }, 300);
+            }
+
+            // Update Modal Scores
+            document.getElementById('finalScore').innerText = `${score}점`;
+            document.getElementById('finalAttempts').innerText = `${attempts}회`;
+            document.getElementById('finalTime').innerText = `${secondsElapsed}초`;
+
+            // Display Modal
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function closeModalAndReset() {
+            document.getElementById('successModal').classList.add('hidden');
+            resetGame();
+        }
+
+        // Initialize Game on Load
+        window.onload = function() {
+            resetGame();
+        };
+    </script>
+</body>
+</html>
