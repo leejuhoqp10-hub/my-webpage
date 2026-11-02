@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>디지털 리터러시 자기평가 레이더 차트</title>
+<style>
+:root{--blue:#2563eb;--red:#dc2626;--bg:#f5f7fb;--ink:#1c2737;--line:#d8e0ea;--muted:#65748b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;line-height:1.6}
+main{max-width:1060px;margin:30px auto;padding:0 18px 40px}h1{font-size:clamp(23px,3vw,32px);margin:0 0 8px}h2{font-size:19px;margin:0 0 15px}.lead{color:var(--muted);margin:0 0 23px}.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px}.card{background:white;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 2px 12px #182b4310}.headrow,.score-row{display:grid;grid-template-columns:minmax(0,1fr) 80px 80px;gap:7px;align-items:center}.headrow{font-size:13px;font-weight:700;margin-bottom:12px}.headrow span:nth-child(2){color:var(--blue)}.headrow span:nth-child(3){color:var(--red)}.headrow span:not(:first-child){text-align:center}.score-row{margin:10px 0;font-size:13px}.score-row input{min-width:0;width:100%;padding:8px 5px;border:1px solid var(--line);border-radius:8px;text-align:center;font-size:14px}.score-row input:focus{outline:2px solid #93b4ff;outline-offset:1px}button{cursor:pointer;background:white;border:1px solid var(--line);border-radius:9px;padding:10px 13px;font-weight:bold;color:var(--ink)}button:hover{background:#edf2f9}.primary{background:#2359c9;border-color:#2359c9;color:white}.primary:hover{background:#1b4aaa}.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.hint{font-size:12px;color:var(--muted)}.legend{display:flex;gap:20px;justify-content:center;font-size:14px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px}.chart-wrap{max-width:560px;margin:auto}svg{display:block;width:100%;height:auto}.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.stat{background:#f2f5fa;text-align:center;border-radius:12px;padding:13px 4px}.stat span{display:block;font-size:12px;color:var(--muted)}.stat strong{display:block;font-size:25px}.analysis{margin-top:18px}.analysis p{margin:8px 0}#warning{color:#9a5700}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}@media(max-width:750px){.layout{grid-template-columns:1fr}.card{padding:16px}.stat strong{font-size:21px}}@media(max-width:380px){.headrow,.score-row{grid-template-columns:minmax(0,1fr) 70px 70px;gap:5px}}
+</style>
+</head>
+<body>
+<main>
+<h1>디지털 리터러시 자기평가</h1>
+<p class="lead">사전평가와 사후평가의 역량 변화를 레이더 차트로 비교해 보세요.</p>
+<div class="layout">
+<section class="card" aria-labelledby="inputTitle">
+<h2 id="inputTitle">영역별 점수 입력</h2>
+<div class="headrow"><span>평가 영역</span><span>사전평가</span><span>사후평가</span></div>
+<div id="inputs"></div>
+<div class="buttons"><button id="restore" type="button">기본 점수 복원</button><button id="clear" type="button">점수 초기화</button></div>
+<p class="hint">점수 범위: 0~100점. 빈칸은 미입력으로 처리합니다.</p>
+</section>
+<section class="card" aria-labelledby="chartTitle">
+<h2 id="chartTitle">사전·사후 역량 비교</h2>
+<div class="legend"><span><i style="background:var(--blue)"></i>사전평가</span><span><i style="background:var(--red)"></i>사후평가</span></div>
+<div class="chart-wrap"><svg id="chart" viewBox="0 0 520 430" role="img" aria-label="디지털 리터러시 사전 사후 점수 레이더 차트"></svg></div>
+<p id="warning" class="hint" aria-live="polite"></p>
+<div class="stat-row"><div class="stat"><span>사전 평균</span><strong id="preAvg" style="color:var(--blue)">47.2</strong><span>점</span></div><div class="stat"><span>사후 평균</span><strong id="postAvg" style="color:var(--red)">77.8</strong><span>점</span></div><div class="stat"><span>평균 향상</span><strong id="diffAvg">+30.6</strong><span>점</span></div></div>
+<div class="buttons"><button class="primary" id="save" type="button">차트 PNG 저장</button><button id="copy" type="button">분석 요약 복사</button></div>
+</section>
+</div>
+<section class="card analysis" aria-labelledby="analysisTitle"><h2 id="analysisTitle">평가 결과 분석</h2><p id="summary" aria-live="polite"></p><p id="detail"></p></section>
+</main>
+<script>
+'use strict';
+const labels=['정보검색 능력','비판적 사고','디지털 도구 활용','협업 능력','창의적 문제해결'];
+const initial=[[45,78],[38,71],[52,85],[60,80],[41,75]];
+let scores=initial.map(row=>row.slice());
+const inputArea=document.querySelector('#inputs');
+labels.forEach((label,i)=>{
+ const row=document.createElement('div');row.className='score-row';
+ const name=document.createElement('span');name.textContent=label;row.appendChild(name);
+ for(let j=0;j<2;j++){
+  const field=document.createElement('input');field.type='number';field.min='0';field.max='100';field.step='1';field.value=scores[i][j];
+  field.dataset.i=i;field.dataset.j=j;field.setAttribute('aria-label',`${label} ${j===0?'사전평가':'사후평가'}`);
+  field.addEventListener('input',()=>{const raw=field.value.trim();scores[i][j]=raw===''?null:Math.min(100,Math.max(0,Number(raw)));render();});
+  field.addEventListener('change',()=>{field.value=scores[i][j]??'';});row.appendChild(field);
+ }
+ inputArea.appendChild(row);
+});
+function syncInputs(){inputArea.querySelectorAll('input').forEach(el=>{el.value=scores[+el.dataset.i][+el.dataset.j]??'';});render();}
+document.querySelector('#restore').addEventListener('click',()=>{scores=initial.map(row=>row.slice());syncInputs();});
+document.querySelector('#clear').addEventListener('click',()=>{scores=initial.map(()=>[0,0]);syncInputs();});
+const svg=document.querySelector('#chart'),NS='http://www.w3.org/2000/svg',cx=260,cy=210,R=152;
+function add(tag,attrs={},text){const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));if(text!==undefined)el.textContent=text;svg.appendChild(el);return el;}
+function point(i,r){const a=-Math.PI/2+i*2*Math.PI/5;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+function pts(list){return list.map(p=>p.join(',')).join(' ');}
+const mean=arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+function render(){
+ svg.replaceChildren();
+ // 그리드와 척도
+ for(let v=20;v<=100;v+=20){add('polygon',{points:pts(labels.map((_,i)=>point(i,R*v/100))),fill:'none',stroke:'#cbd5e1','stroke-width':'1'});add('text',{x:cx+7,y:cy-R*v/100-3,'font-size':'11',fill:'#64748b'},String(v));}
+ labels.forEach((label,i)=>{
+  const edge=point(i,R),pos=point(i,R+39);
+  add('line',{x1:cx,y1:cy,x2:edge[0],y2:edge[1],stroke:'#cbd5e1'});
+  const text=add('text',{x:pos[0],y:pos[1],fill:'#243247','font-size':'13','font-weight':'600','text-anchor':i===0?'middle':pos[0]>cx+10?'start':pos[0]<cx-10?'end':'middle'});
+  const words=label==='디지털 도구 활용'?['디지털 도구','활용']:label==='창의적 문제해결'?['창의적','문제해결']:[label];
+  words.forEach((w,k)=>{const t=document.createElementNS(NS,'tspan');t.setAttribute('x',pos[0]);t.setAttribute('dy',k===0?(words.length>1?-7:0):'16');t.textContent=w;text.appendChild(t);});
+ });
+ [0,1].forEach(j=>{
+  const color=j===0?'#2563eb':'#dc2626';const data=scores.map((row,i)=>row[j]===null?null:point(i,R*row[j]/100));
+  if(data.every(Boolean))add('polygon',{points:pts(data),fill:color,'fill-opacity':'.16',stroke:color,'stroke-width':'3','stroke-linejoin':'round'});
+  else for(let i=0;i<data.length;i++){let next=(i+1)%data.length;if(data[i]&&data[next])add('line',{x1:data[i][0],y1:data[i][1],x2:data[next][0],y2:data[next][1],stroke:color,'stroke-width':'3'});}
+  data.forEach((p,i)=>{if(p){const circle=add('circle',{cx:p[0],cy:p[1],r:4.5,fill:color,stroke:'white','stroke-width':'1.5'});const title=document.createElementNS(NS,'title');title.textContent=`${labels[i]} ${j===0?'사전':'사후'} ${scores[i][j]}점`;circle.appendChild(title);}});
+ });
+ const pre=scores.map(r=>r[0]).filter(v=>v!==null),post=scores.map(r=>r[1]).filter(v=>v!==null);
+ const comparable=scores.map((r,i)=>({label:labels[i],pre:r[0],post:r[1]})).filter(r=>r.pre!==null&&r.post!==null);
+ document.querySelector('#preAvg').textContent=pre.length?mean(pre).toFixed(1):'—';document.querySelector('#postAvg').textContent=post.length?mean(post).toFixed(1):'—';
+ const delta=comparable.length?mean(comparable.map(r=>r.post-r.pre)):null;
+ document.querySelector('#diffAvg').textContent=delta===null?'—':`${delta>0?'+':''}${delta.toFixed(1)}`;
+ document.querySelector('#warning').textContent=scores.some(row=>row.includes(null))?'일부 점수가 미입력되었습니다. 해당 점은 표시하지 않고, 평균에서는 제외합니다.':'';
+ if(!comparable.length){document.querySelector('#summary').textContent='비교할 수 있는 영역이 없습니다. 사전·사후 점수를 입력해 주세요.';document.querySelector('#detail').textContent='';return;}
+ const gains=comparable.map(r=>({...r,gain:r.post-r.pre}));const maxGain=Math.max(...gains.map(r=>r.gain));
+ const top=gains.filter(r=>r.gain===maxGain).map(r=>r.label).join(', ');
+ const minPost=Math.min(...post);const weakest=scores.map((r,i)=>({name:labels[i],post:r[1]})).filter(r=>r.post===minPost).map(r=>r.name).join(', ');
+ document.querySelector('#summary').textContent=`비교 가능한 ${comparable.length}개 영역의 평균 점수 변화는 ${delta>=0?'+':''}${delta.toFixed(1)}점입니다. 가장 많이 향상된 영역은 ${top}(${maxGain>=0?'+':''}${maxGain}점)입니다.`;
+ document.querySelector('#detail').textContent=`사후평가 점수가 상대적으로 낮은 영역은 ${weakest}(${minPost}점)입니다. 이 영역을 향후 보완 과제로 참고할 수 있습니다.`;
+}
+document.querySelector('#copy').addEventListener('click',async()=>{const t=document.querySelector('#summary').textContent+'\n'+document.querySelector('#detail').textContent;try{await navigator.clipboard.writeText(t);alert('분석 요약을 복사했습니다.');}catch(e){const temp=document.createElement('textarea');temp.value=t;document.body.appendChild(temp);temp.select();document.execCommand('copy');temp.remove();alert('분석 요약을 복사했습니다.');}});
+document.querySelector('#save').addEventListener('click',()=>{
+ const clone=svg.cloneNode(true);clone.setAttribute('xmlns',NS);clone.setAttribute('width','1040');clone.setAttribute('height','860');
+ const xml=new XMLSerializer().serializeToString(clone);const url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'}));const image=new Image();
+ image.onload=()=>{const canvas=document.createElement('canvas');canvas.width=1040;canvas.height=860;const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,1040,860);ctx.drawImage(image,0,0,1040,860);URL.revokeObjectURL(url);canvas.toBlob(blob=>{if(!blob){alert('이미지를 생성하지 못했습니다.');return;}const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='디지털리터러시_레이더차트.png';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000);},'image/png');};
+ image.onerror=()=>{URL.revokeObjectURL(url);alert('차트 이미지 저장에 실패했습니다.');};image.src=url;
+});
+render();
+</script>
+</body>
+</html>
