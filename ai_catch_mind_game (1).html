@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 캐치마인드 - Gemini Vision 퀴즈</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+        .bounce-anim {
+            animation: bounce 1.2s infinite alternate;
+        }
+        @keyframes bounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-12px); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:px-8 flex flex-wrap justify-between items-center sticky top-0 z-30 gap-2">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-md flex items-center justify-center w-10 h-10 md:w-12 md:h-12">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-black text-xl md:text-2xl text-indigo-900 tracking-tight">AI 캐치마인드</h1>
+                <p class="text-xs text-slate-500 font-medium hidden sm:block">Gemini 2.5/1.5 Vision 기반 그림 맞추기</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <!-- API Key 모달 열기 버튼 -->
+            <button onclick="toggleApiKeyModal()" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl font-bold text-xs border border-slate-300 transition-colors">
+                <i class="fa-solid fa-key text-amber-500"></i>
+                <span id="apiKeyBtnText">API Key 설정</span>
+            </button>
+
+            <!-- 점수 표시 -->
+            <div id="headerScore" class="flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3.5 py-1.5 rounded-full font-bold text-sm">
+                <i class="fa-solid fa-trophy text-amber-500"></i>
+                <span>점수: <span id="scoreVal" class="text-indigo-900">0</span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow flex items-center justify-center p-3 md:p-6 max-w-5xl mx-auto w-full">
+
+        <!-- STEP 1: 카테고리 선택 및 API 키 입력 화면 -->
+        <section id="stepCategory" class="w-full bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-slate-100 flex flex-col items-center">
+            <div class="text-center max-w-xl mb-6">
+                <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full mb-3">창의·디지털 AI 학습</span>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2">어떤 주제의 그림을 그릴까요?</h2>
+                <p class="text-sm md:text-base text-slate-500">카테고리를 선택하면 제시어가 선정됩니다. 60초 안에 그림을 완성해 보세요!</p>
+            </div>
+
+            <!-- API 키 설정 입력 카드 (기본 제공/저장) -->
+            <div class="w-full max-w-lg bg-indigo-50/70 p-4 rounded-2xl border border-indigo-100 mb-8 flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <label for="apiKeyInput" class="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-key text-amber-500"></i> Gemini API Key (선택/직접입력)
+                    </label>
+                    <span id="apiKeyStatus" class="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">환경/기본키 준비됨</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="password" id="apiKeyInput" placeholder="Google AI Studio API Key (미입력 시 기본 Key 사용)" 
+                           class="flex-grow text-xs px-3 py-2 bg-white rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-mono">
+                    <button onclick="saveApiKey()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                        저장
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-500">※ 입력한 API Key는 사용자의 브라우저(localStorage)에 안전하게 저장됩니다.</p>
+            </div>
+
+            <!-- 카테고리 선택 버튼들 -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 w-full mb-8">
+                <button onclick="selectCategory('동물')" class="category-btn group p-5 bg-emerald-50 hover:bg-emerald-500 hover:text-white border-2 border-emerald-200 hover:border-emerald-500 rounded-2xl flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1 shadow-sm">
+                    <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🦁</span>
+                    <span class="font-bold text-emerald-800 group-hover:text-white">동물</span>
+                </button>
+                <button onclick="selectCategory('과일')" class="category-btn group p-5 bg-rose-50 hover:bg-rose-500 hover:text-white border-2 border-rose-200 hover:border-rose-500 rounded-2xl flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1 shadow-sm">
+                    <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🍎</span>
+                    <span class="font-bold text-rose-800 group-hover:text-white">과일</span>
+                </button>
+                <button onclick="selectCategory('채소')" class="category-btn group p-5 bg-green-50 hover:bg-green-500 hover:text-white border-2 border-green-200 hover:border-green-500 rounded-2xl flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1 shadow-sm">
+                    <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🥕</span>
+                    <span class="font-bold text-green-800 group-hover:text-white">채소</span>
+                </button>
+                <button onclick="selectCategory('사물')" class="category-btn group p-5 bg-amber-50 hover:bg-amber-500 hover:text-white border-2 border-amber-200 hover:border-amber-500 rounded-2xl flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1 shadow-sm">
+                    <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🎒</span>
+                    <span class="font-bold text-amber-800 group-hover:text-white">사물</span>
+                </button>
+                <button onclick="selectCategory('교통수단')" class="category-btn group p-5 bg-sky-50 hover:bg-sky-500 hover:text-white border-2 border-sky-200 hover:border-sky-500 rounded-2xl flex flex-col items-center transition-all duration-200 transform hover:-translate-y-1 shadow-sm col-span-2 sm:col-span-1">
+                    <span class="text-4xl mb-3 group-hover:scale-110 transition-transform">🚀</span>
+                    <span class="font-bold text-sky-800 group-hover:text-white">교통수단</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 2: 그림 그리기 캔버스 화면 -->
+        <section id="stepGame" class="hidden w-full flex flex-col items-center gap-4">
+            
+            <!-- 상단 바: 제시어 및 타이머 -->
+            <div class="w-full bg-white rounded-2xl p-4 shadow-md border border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center gap-3">
+                    <span id="displayCategory" class="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-black rounded-lg">카테고리</span>
+                    <div class="flex items-baseline gap-1.5">
+                        <span class="text-xs text-slate-400 font-bold">제시어:</span>
+                        <span id="targetWord" class="text-xl md:text-2xl font-black text-slate-900 tracking-wider">???</span>
+                    </div>
+                </div>
+                
+                <!-- 타이머 -->
+                <div class="flex items-center gap-2 bg-slate-100 px-4 py-1.5 rounded-xl border border-slate-200">
+                    <i class="fa-regular fa-clock text-slate-500"></i>
+                    <span id="timerDisplay" class="font-black text-xl text-indigo-600 tracking-mono">60</span>
+                    <span class="text-xs text-slate-400 font-bold">초</span>
+                </div>
+            </div>
+
+            <!-- 캔버스 영역 -->
+            <div class="relative w-full aspect-square max-w-[550px] max-h-[550px] bg-white rounded-3xl shadow-lg border-4 border-slate-200 overflow-hidden">
+                <canvas id="paintCanvas" class="w-full h-full bg-white"></canvas>
+
+                <!-- 캔버스 잠금 오버레이 -->
+                <div id="canvasOverlay" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20">
+                    <div class="bg-white text-slate-900 p-6 rounded-3xl shadow-2xl flex flex-col items-center max-w-xs text-center">
+                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-3xl mb-3">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-1">시간이 종료되었습니다!</h3>
+                        <p class="text-xs text-slate-500 mb-4">그림이 잠겼습니다. 완료된 그림을 AI에게 제출하세요.</p>
+                        <button onclick="submitDrawing()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-transform active:scale-95">
+                            AI에게 제출하기 <i class="fa-solid fa-paper-plane ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 도구 모음 (Tools Bar) -->
+            <div id="toolsBar" class="w-full max-w-[550px] bg-white rounded-2xl p-3 shadow-md border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <!-- 색상 선택 -->
+                <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+                    <button onclick="setColor('#000000')" class="color-btn w-7 h-7 rounded-full bg-black border-2 border-slate-300 ring-2 ring-indigo-500 ring-offset-1 transform scale-110" data-color="#000000"></button>
+                    <button onclick="setColor('#ef4444')" class="color-btn w-7 h-7 rounded-full bg-red-500 border-2 border-white shadow-xs" data-color="#ef4444"></button>
+                    <button onclick="setColor('#f97316')" class="color-btn w-7 h-7 rounded-full bg-orange-500 border-2 border-white shadow-xs" data-color="#f97316"></button>
+                    <button onclick="setColor('#eab308')" class="color-btn w-7 h-7 rounded-full bg-yellow-500 border-2 border-white shadow-xs" data-color="#eab308"></button>
+                    <button onclick="setColor('#22c55e')" class="color-btn w-7 h-7 rounded-full bg-green-500 border-2 border-white shadow-xs" data-color="#22c55e"></button>
+                    <button onclick="setColor('#06b6d4')" class="color-btn w-7 h-7 rounded-full bg-cyan-500 border-2 border-white shadow-xs" data-color="#06b6d4"></button>
+                    <button onclick="setColor('#3b82f6')" class="color-btn w-7 h-7 rounded-full bg-blue-500 border-2 border-white shadow-xs" data-color="#3b82f6"></button>
+                    <button onclick="setColor('#a855f7')" class="color-btn w-7 h-7 rounded-full bg-purple-500 border-2 border-white shadow-xs" data-color="#a855f7"></button>
+                    <button onclick="setColor('#ec4899')" class="color-btn w-7 h-7 rounded-full bg-pink-500 border-2 border-white shadow-xs" data-color="#ec4899"></button>
+                    <button onclick="setColor('#78350f')" class="color-btn w-7 h-7 rounded-full bg-amber-900 border-2 border-white shadow-xs" data-color="#78350f"></button>
+                </div>
+
+                <!-- 선 굵기 및 지우개 / 페인트통 -->
+                <div class="flex items-center gap-2">
+                    <button onclick="setLineWidth(4)" class="width-btn p-2 w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-xs font-bold hover:bg-slate-50" data-width="4">
+                        <div class="w-1.5 h-1.5 bg-slate-700 rounded-full"></div>
+                    </button>
+                    <button onclick="setLineWidth(10)" class="width-btn p-2 w-8 h-8 rounded-lg border-2 border-indigo-500 bg-indigo-50 flex items-center justify-center text-xs font-bold" data-width="10">
+                        <div class="w-3 h-3 bg-slate-700 rounded-full"></div>
+                    </button>
+                    <button onclick="setLineWidth(20)" class="width-btn p-2 w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-xs font-bold hover:bg-slate-50" data-width="20">
+                        <div class="w-4.5 h-4.5 bg-slate-700 rounded-full"></div>
+                    </button>
+                    
+                    <div class="h-6 w-px bg-slate-200 mx-0.5"></div>
+
+                    <!-- 도구 선택 버튼들 -->
+                    <button id="penBtn" onclick="setMode('pen')" class="p-2 px-3 rounded-lg border-2 border-indigo-500 bg-indigo-50 text-xs font-bold text-indigo-700 flex items-center gap-1 shadow-xs">
+                        <i class="fa-solid fa-pen-nib"></i> 펜
+                    </button>
+                    <button id="fillBtn" onclick="setMode('fill')" class="p-2 px-3 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1">
+                        <i class="fa-solid fa-fill-drip text-indigo-600"></i> 채우기
+                    </button>
+                    <button id="eraserBtn" onclick="setMode('eraser')" class="p-2 px-3 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1">
+                        <i class="fa-solid fa-eraser text-amber-600"></i> 지우개
+                    </button>
+                    <button onclick="clearCanvas()" class="p-2 px-3 rounded-lg border border-rose-200 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i> 전체삭제
+                    </button>
+                </div>
+            </div>
+
+            <!-- 하단 제출 버튼 -->
+            <div class="w-full max-w-[550px] flex justify-end">
+                <button id="submitBtn" onclick="submitDrawing()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-black text-lg rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all">
+                    <span>AI 제출하고 정답 확인</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 3: AI 분석 대기 연출 화면 -->
+        <section id="stepAnalyzing" class="hidden w-full bg-white rounded-3xl shadow-xl p-10 border border-slate-100 flex flex-col items-center text-center">
+            <div class="relative w-32 h-32 mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center bounce-anim">
+                    <i class="fa-solid fa-robot text-5xl text-indigo-600"></i>
+                </div>
+            </div>
+            
+            <h2 class="text-2xl font-black text-slate-800 mb-2">AI가 생각 중입니다...</h2>
+            <p class="text-sm text-slate-500 max-w-sm mb-6">Gemini Vision 모델이 제출된 그림의 픽셀 특징을 분석하여 정답 단어를 추론하고 있습니다.</p>
+
+            <div class="w-full max-w-xs bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-indigo-600 h-full rounded-full animate-pulse w-full"></div>
+            </div>
+        </section>
+
+        <!-- STEP 4: 결과 화면 -->
+        <section id="stepResult" class="hidden w-full bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-slate-100 flex flex-col items-center">
+            <div id="resultBadge" class="mb-6 px-6 py-2.5 rounded-full font-black text-lg md:text-xl flex items-center gap-2.5 shadow-md"></div>
+
+            <h2 id="resultTitle" class="text-2xl md:text-3xl font-black text-slate-800 text-center mb-8"></h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mb-8">
+                <!-- 사용자 그림 카드 -->
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col items-center">
+                    <span class="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">내가 그린 그림</span>
+                    <div class="w-full aspect-square bg-white rounded-xl border border-slate-300 overflow-hidden shadow-inner flex items-center justify-center p-2 mb-3">
+                        <img id="resultImg" src="" alt="사용자 그림 스냅샷" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <div class="text-center">
+                        <span class="text-xs text-slate-400 font-semibold">실제 정답</span>
+                        <p id="answerText" class="text-xl font-black text-slate-800"></p>
+                    </div>
+                </div>
+
+                <!-- AI 추론 결과 카드 -->
+                <div class="bg-indigo-50/60 p-5 rounded-2xl border border-indigo-100 flex flex-col items-center justify-between">
+                    <div class="w-full flex flex-col items-center">
+                        <span class="text-xs font-bold text-indigo-400 mb-3 tracking-wider uppercase">Gemini Vision AI 추론</span>
+                        <div class="w-full aspect-square bg-white rounded-xl border border-indigo-100 overflow-hidden shadow-inner flex flex-col items-center justify-center p-6 text-center">
+                            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl mb-4">
+                                <i class="fa-solid fa-brain"></i>
+                            </div>
+                            <span class="text-xs text-slate-400 font-bold mb-1">AI가 생각한 정답</span>
+                            <p id="aiGuessText" class="text-2xl md:text-3xl font-black text-indigo-600 tracking-tight">계산 중...</p>
+                        </div>
+                    </div>
+
+                    <div class="w-full mt-4 bg-white/80 p-3 rounded-xl border border-indigo-100 text-xs text-indigo-900/80">
+                        <span class="font-bold">💡 비전 모델 분석 결과:</span>
+                        <p id="aiExplanation" class="mt-0.5 text-slate-600">AI는 제시어를 전달받지 않고, 지정된 카테고리와 그림 시각 정보만을 가지고 판단했습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                <button onclick="restartGame()" class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>다른 그림 또 맞추기</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+        <p>AI 캐치마인드 &copy; 2026 | Google Gemini Vision 연동 창의 학습 웹 앱</p>
+    </footer>
+
+    <!-- App JavaScript -->
+    <script>
+        // --- 1. 제시어 라이브러리 ---
+        const WORD_DATABASE = {
+            '동물': ['호랑이', '사자', '코끼리', '기린', '토끼', '강아지', '고양이', '오리', '원숭이', '돼지', '펭귄', '판다', '악어', '하마', '돌고래'],
+            '과일': ['사과', '바나나', '포도', '수박', '딸기', '복숭아', '파인애플', '오렌지', '참외', '키위', '감', '체리', '레몬', '망고', '자두'],
+            '채소': ['당근', '오이', '호박', '가지', '무', '양파', '고추', '토마토', '감자', '고구마', '브로콜리', '옥수수', '버섯', '배추', '파'],
+            '사물': ['연필', '시계', '안경', '모자', '가방', '가위', '우산', '책', '전화기', '의자', '책상', '컵', '거울', '열쇠', '지우개'],
+            '교통수단': ['자동차', '버스', '자전거', '비행기', '기차', '헬리콥터', '배', '오토바이', '소방차', '경찰차', '구급차', '택시', '트럭', '잠수함', '킥보드']
+        };
+
+        // --- 2. 상태 변수 ---
+        let currentCategory = '';
+        let currentWord = '';
+        let timer = 60;
+        let timerInterval = null;
+        let isDrawingLocked = false;
+        let snapshotDataUrl = '';
+        let totalScore = 0;
+
+        // 캔버스 관련
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentColor = '#000000';
+        let currentLineWidth = 10;
+        let currentMode = 'pen'; // 'pen', 'fill', 'eraser'
+
+        // --- 3. API Key 관리 ---
+        function getStoredApiKey() {
+            return localStorage.getItem('gemini_api_key') || "";
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('apiKeyInput').value.trim();
+            if (val) {
+                localStorage.setItem('gemini_api_key', val);
+                document.getElementById('apiKeyStatus').innerText = '사용자 Key 적용됨';
+                document.getElementById('apiKeyStatus').className = 'text-[11px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full';
+            } else {
+                localStorage.removeItem('gemini_api_key');
+                document.getElementById('apiKeyStatus').innerText = '환경/기본키 준비됨';
+                document.getElementById('apiKeyStatus').className = 'text-[11px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = getStoredApiKey();
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                document.getElementById('apiKeyStatus').innerText = '사용자 Key 적용됨';
+                document.getElementById('apiKeyStatus').className = 'text-[11px] font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full';
+            }
+        });
+
+        // --- 4. Canvas 초기화 및 고해상도 DPI 보정 ---
+        function initCanvasSize() {
+            const rect = canvas.getBoundingClientRect();
+            const scale = window.devicePixelRatio || 1;
+            canvas.width = rect.width * scale;
+            canvas.height = rect.height * scale;
+            ctx.scale(scale, scale);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            updateContextStyle();
+        }
+
+        function updateContextStyle() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = (currentMode === 'eraser') ? '#ffffff' : currentColor;
+            ctx.lineWidth = currentLineWidth;
+        }
+
+        // --- 5. 터치 및 마우스 그리기 이벤트 ---
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            if (isDrawingLocked) return;
+            const pos = getCanvasCoordinates(e);
+
+            if (currentMode === 'fill') {
+                floodFill(Math.floor(pos.x), Math.floor(pos.y), currentColor);
+                e.preventDefault();
+                return;
+            }
+
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing || isDrawingLocked || currentMode === 'fill') return;
+            const pos = getCanvasCoordinates(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                ctx.closePath();
+                isDrawing = false;
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // --- 6. Flood Fill (색 채우기 BFS) ---
+        function hexToRgba(hex) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(char => char + char).join('');
+            const num = parseInt(c, 16);
+            return [(num >> 16) & 255, (num >> 8) & 255, num & 255, 255];
+        }
+
+        function floodFill(startX, startY, fillHexColor) {
+            const scale = window.devicePixelRatio || 1;
+            const pixelX = Math.floor(startX * scale);
+            const pixelY = Math.floor(startY * scale);
+            const width = canvas.width;
+            const height = canvas.height;
+
+            if (pixelX < 0 || pixelX >= width || pixelY < 0 || pixelY >= height) return;
+
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+
+            const targetIdx = (pixelY * width + pixelX) * 4;
+            const targetR = data[targetIdx];
+            const targetG = data[targetIdx + 1];
+            const targetB = data[targetIdx + 2];
+            const targetA = data[targetIdx + 3];
+
+            const fillRgba = hexToRgba(fillHexColor);
+
+            if (Math.abs(targetR - fillRgba[0]) < 10 &&
+                Math.abs(targetG - fillRgba[1]) < 10 &&
+                Math.abs(targetB - fillRgba[2]) < 10 &&
+                Math.abs(targetA - fillRgba[3]) < 10) {
+                return;
+            }
+
+            const tolerance = 48;
+            function matchTargetColor(idx) {
+                return (
+                    Math.abs(data[idx] - targetR) <= tolerance &&
+                    Math.abs(data[idx + 1] - targetG) <= tolerance &&
+                    Math.abs(data[idx + 2] - targetB) <= tolerance &&
+                    Math.abs(data[idx + 3] - targetA) <= tolerance
+                );
+            }
+
+            const queue = [pixelX, pixelY];
+            let head = 0;
+
+            while (head < queue.length) {
+                const x = queue[head++];
+                const y = queue[head++];
+                const idx = (y * width + x) * 4;
+
+                if (matchTargetColor(idx)) {
+                    data[idx] = fillRgba[0];
+                    data[idx + 1] = fillRgba[1];
+                    data[idx + 2] = fillRgba[2];
+                    data[idx + 3] = fillRgba[3];
+
+                    if (x > 0) queue.push(x - 1, y);
+                    if (x < width - 1) queue.push(x + 1, y);
+                    if (y > 0) queue.push(x, y - 1);
+                    if (y < height - 1) queue.push(x, y + 1);
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // --- 7. 도구 제어 ---
+        function setMode(mode) {
+            currentMode = mode;
+            updateContextStyle();
+
+            const penBtn = document.getElementById('penBtn');
+            const fillBtn = document.getElementById('fillBtn');
+            const eraserBtn = document.getElementById('eraserBtn');
+
+            [penBtn, fillBtn, eraserBtn].forEach(btn => {
+                btn.className = "p-2 px-3 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1";
+            });
+
+            if (mode === 'pen') {
+                penBtn.className = "p-2 px-3 rounded-lg border-2 border-indigo-500 bg-indigo-50 text-xs font-bold text-indigo-700 flex items-center gap-1 shadow-xs";
+            } else if (mode === 'fill') {
+                fillBtn.className = "p-2 px-3 rounded-lg border-2 border-indigo-500 bg-indigo-50 text-xs font-bold text-indigo-700 flex items-center gap-1 shadow-xs";
+            } else if (mode === 'eraser') {
+                eraserBtn.className = "p-2 px-3 rounded-lg border-2 border-amber-500 bg-amber-100 text-xs font-bold text-amber-800 flex items-center gap-1 shadow-xs";
+            }
+        }
+
+        function setColor(color) {
+            currentColor = color;
+            if (currentMode === 'eraser') setMode('pen');
+            else updateContextStyle();
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                if (btn.dataset.color === color) {
+                    btn.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1', 'scale-110');
+                } else {
+                    btn.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1', 'scale-110');
+                }
+            });
+        }
+
+        function setLineWidth(width) {
+            currentLineWidth = width;
+            updateContextStyle();
+
+            document.querySelectorAll('.width-btn').forEach(btn => {
+                if (parseInt(btn.dataset.width) === width) {
+                    btn.classList.add('border-2', 'border-indigo-500', 'bg-indigo-50');
+                    btn.classList.remove('border-slate-200');
+                } else {
+                    btn.classList.remove('border-2', 'border-indigo-500', 'bg-indigo-50');
+                    btn.classList.add('border-slate-200');
+                }
+            });
+        }
+
+        function clearCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+        }
+
+        // --- 8. 게임 플레이 제어 ---
+        function selectCategory(category) {
+            currentCategory = category;
+            const words = WORD_DATABASE[category];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+
+            document.getElementById('stepCategory').classList.add('hidden');
+            document.getElementById('stepGame').classList.remove('hidden');
+
+            document.getElementById('displayCategory').innerText = currentCategory;
+            document.getElementById('targetWord').innerText = currentWord;
+
+            setTimeout(() => { initCanvasSize(); }, 50);
+            startTimer();
+        }
+
+        function startTimer() {
+            timer = 60;
+            isDrawingLocked = false;
+            document.getElementById('timerDisplay').innerText = timer;
+            document.getElementById('canvasOverlay').classList.add('hidden');
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                timer--;
+                document.getElementById('timerDisplay').innerText = timer;
+
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    lockCanvas();
+                }
+            }, 1000);
+        }
+
+        function lockCanvas() {
+            isDrawingLocked = true;
+            document.getElementById('canvasOverlay').classList.remove('hidden');
+        }
+
+        // --- 9. 핵심: Gemini Vision API 호출 ---
+        async function submitDrawing() {
+            if (timerInterval) clearInterval(timerInterval);
+            snapshotDataUrl = canvas.toDataURL('image/png');
+
+            document.getElementById('stepGame').classList.add('hidden');
+            document.getElementById('stepAnalyzing').classList.remove('hidden');
+
+            try {
+                // Base64 순수 데이터만 분리
+                const base64ImageData = snapshotDataUrl.split(',')[1];
+
+                // 사용자가 지정한 API 키 우선 사용
+                const userKey = getStoredApiKey();
+                const apiKey = userKey || "";
+                
+                // 프롬프트: 카테고리만 제공, 실제 정답(제시어)은 결코 포함하지 않음
+                const systemPrompt = "당신은 캐치마인드 퀴즈 심판입니다.";
+                const userQuery = `제시된 카테고리는 [${currentCategory}]입니다. 그림을 분석하여 이 카테고리에 속하는 한국어 명사 한 단어로만 대답하세요. 다른 설명이나 특수문자, 공백 없이 단어 하나만 출력하세요.`;
+
+                // REST API 엔드포인트 (Gemini 3 / 2.5 Flash Vision 지원)
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: userQuery },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/png",
+                                        data: base64ImageData
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API HTTP Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                let aiGuess = data.candidates?.[0]?.content?.parts?.[0]?.text || "분석불가";
+                
+                // 단어 깨끗하게 다듬기
+                aiGuess = aiGuess.trim().replace(/[.,"'`!\n\s]/g, '');
+
+                showResult(aiGuess);
+
+            } catch (error) {
+                console.error("Gemini Vision API 호출 실패:", error);
+                showResult("API오류");
+            }
+        }
+
+        // --- 10. 결과 출력 ---
+        function showResult(aiAnswer) {
+            document.getElementById('stepAnalyzing').classList.add('hidden');
+            document.getElementById('stepResult').classList.remove('hidden');
+
+            document.getElementById('resultImg').src = snapshotDataUrl;
+            document.getElementById('answerText').innerText = currentWord;
+            document.getElementById('aiGuessText').innerText = aiAnswer;
+
+            const isCorrect = (aiAnswer === currentWord);
+            const badge = document.getElementById('resultBadge');
+            const title = document.getElementById('resultTitle');
+
+            if (isCorrect) {
+                badge.className = "mb-6 px-6 py-2.5 rounded-full font-black text-lg md:text-xl flex items-center gap-2.5 shadow-md bg-emerald-100 text-emerald-800 border border-emerald-300";
+                badge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> 정답입니다! 🎉`;
+                title.innerText = `AI가 당신의 그림을 정확히 알아 맞췄어요!`;
+                
+                totalScore += 100;
+                document.getElementById('scoreVal').innerText = totalScore;
+            } else {
+                badge.className = "mb-6 px-6 py-2.5 rounded-full font-black text-lg md:text-xl flex items-center gap-2.5 shadow-md bg-rose-100 text-rose-800 border border-rose-300";
+                badge.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> 정답 맞히기 실패!`;
+                title.innerText = `AI가 다른 단어로 오해했네요! 😅`;
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('stepResult').classList.add('hidden');
+            document.getElementById('stepCategory').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
