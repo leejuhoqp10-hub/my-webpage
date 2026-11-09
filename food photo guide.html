@@ -1,22 +1,821 @@
-<!doctype html>
-<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>사진으로 음식 알아보기</title>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>음식 칼로리 자동계산</title>
+
 <style>
-:root{font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#21352e;background:#f5f8f5}*{box-sizing:border-box}body{margin:0}main{max-width:850px;margin:0 auto;padding:28px 18px 60px}.eyebrow{color:#48846d;font-weight:800;letter-spacing:.07em;font-size:12px}h1{font-size:clamp(28px,5vw,39px);margin:8px 0}p{line-height:1.6;color:#647369}.panel{background:white;border:1px solid #dce9df;border-radius:22px;padding:24px;margin-top:20px;box-shadow:0 8px 26px #1b51320a}.upload{border:2px dashed #9fcbb3;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:220px;cursor:pointer;background:#f9fcfa;text-align:center;padding:20px}.upload strong{font-size:20px}.upload small{color:#698076}.upload.drag{background:#e8f5ee}#preview{max-height:280px;max-width:100%;border-radius:15px;display:none;object-fit:contain}.btn{border:0;border-radius:13px;padding:13px 18px;font-weight:750;font-size:15px;cursor:pointer;background:#276d52;color:white}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.alt{background:#e8f1eb;color:#295b44}.btn.warn{background:#f8eeee;color:#9d3d39}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.muted{font-size:13px;color:#77867d}.hidden{display:none!important}.status{padding:12px 14px;border-radius:12px;margin-top:14px;background:#eef7f1;color:#2e6d4e}.status.err{background:#fff1ee;color:#9b4033}.result-head{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.result-head h2{margin:0}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.metric{border-radius:15px;background:#f3f8f4;padding:14px;text-align:center}.metric strong{display:block;font-size:24px;margin-top:4px}.metric span{font-size:13px;color:#687c70}.metric:nth-child(2){background:#f1f6ff}.metric:nth-child(3){background:#fff7ec}.metric:nth-child(4){background:#fbf2fa}table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;border-bottom:1px solid #e5ece7;text-align:left}th{color:#667b6c;font-size:13px}input[type=number],input[type=text]{width:100%;padding:10px;border:1px solid #cbdad0;border-radius:10px;font:inherit}td:first-child{width:40%}td:nth-child(2){width:20%}td:nth-child(3){width:20%}td:last-child{width:20%;text-align:right}.small-btn{padding:8px 12px;border-radius:9px;border:0;background:#e8f1eb;color:#245c42;cursor:pointer;font-weight:700}.small-btn.danger{background:#faeeee;color:#a0443f}.note{background:#f8faf8;border-radius:14px;padding:14px;color:#64756b;font-size:13px;line-height:1.7}label{font-weight:700;display:block;margin-bottom:8px}#editNote{color:#577969;font-size:13px}@media(max-width:580px){.metric-grid{grid-template-columns:repeat(2,1fr)}.panel{padding:17px}table{font-size:13px}td,th{padding:9px 3px}.small-btn{padding:7px}}
-</style></head><body><main><div class="eyebrow">AI FOOD PHOTO GUIDE</div><h1>사진으로 음식 알아보기 🥗</h1><p>음식 사진 한 장으로 종류와 대략적인 영양 정보를 확인해 보세요. 사진만으로는 재료의 정확한 양을 알기 어려우므로 결과는 참고용입니다.</p>
-<section class="panel"><label for="photo">1. 음식 사진 올리기</label><div id="drop" class="upload" role="button" tabindex="0" aria-label="음식 사진 업로드"><span id="uploadIcon" style="font-size:42px">📷</span><strong id="uploadText">사진을 선택하거나 이곳에 놓아주세요</strong><small>JPG, PNG, WEBP · 최대 8MB</small><img id="preview" alt="업로드한 음식 사진"></div><input id="photo" type="file" accept="image/jpeg,image/png,image/webp" hidden><div class="actions"><button id="analyze" class="btn" disabled>✨ Claude AI로 분석하기</button><button id="reset" class="btn alt">↻ 다시 시작</button></div><div id="status" class="status hidden" role="status"></div></section>
-<section id="result" class="panel hidden"><div class="result-head"><div><div class="eyebrow">분석 결과 · 추정값</div><h2 id="foodName">음식 이름</h2></div><button id="editName" class="small-btn">이름 수정</button></div><p id="description"></p><div class="metric-grid"><div class="metric"><span>열량 (대략)</span><strong id="calories">—</strong><span>kcal</span></div><div class="metric"><span>탄수화물</span><strong id="carbs">—</strong><span>g</span></div><div class="metric"><span>단백질</span><strong id="protein">—</strong><span>g</span></div><div class="metric"><span>지방</span><strong id="fat">—</strong><span>g</span></div></div><h3>2. 재료 확인 및 수정</h3><p id="editNote">재료별 추정량을 조정하면 위 수치가 자동으로 다시 계산됩니다.</p><table><thead><tr><th>재료</th><th>양 (g)</th><th>열량 (kcal)</th><th>관리</th></tr></thead><tbody id="ingredients"></tbody></table><div class="actions"><button class="btn alt" id="addIngredient">+ 재료 추가</button><button class="btn" id="reanalyze">수정한 재료로 AI 재분석</button></div><p class="note" id="caution">※ 음식 사진만으로 정확한 재료, 조리법, 양을 파악하기 어렵습니다. 표시된 값은 의료·건강 판단을 위한 수치가 아닌 대략적인 참고 정보입니다.</p></section></main>
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #f3f8f4;
+  color: #253b30;
+  font-family: "Malgun Gothic", Arial, sans-serif;
+}
+.container {
+  max-width: 780px;
+  margin: auto;
+  padding: 24px 16px;
+}
+h1 {
+  text-align: center;
+  color: #288451;
+  margin-bottom: 8px;
+}
+.subtitle {
+  text-align: center;
+  color: #718276;
+  margin-bottom: 25px;
+}
+.card {
+  background: white;
+  padding: 22px;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px #0000000b;
+}
+h2 {
+  font-size: 20px;
+  margin-top: 0;
+}
+h3 {
+  font-size: 16px;
+}
+input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #ccd9d0;
+  border-radius: 9px;
+  margin: 6px 0 13px;
+  font: inherit;
+}
+label {
+  font-size: 13px;
+  font-weight: bold;
+}
+button {
+  background: #288451;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 16px;
+  margin: 4px 4px 4px 0;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover {
+  filter: brightness(.93);
+}
+button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+.gray {
+  background: #6d8777;
+}
+.red {
+  background: #be6860;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.stat {
+  padding: 17px;
+  background: #eaf5ec;
+  text-align: center;
+  border-radius: 12px;
+}
+.stat strong {
+  display: block;
+  font-size: 24px;
+  margin-top: 7px;
+}
+#preview {
+  display: none;
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 12px auto;
+}
+#status {
+  padding: 13px;
+  background: #eff7f0;
+  border-radius: 10px;
+  white-space: pre-wrap;
+}
+.item {
+  padding: 13px 0;
+  border-bottom: 1px solid #e4eae5;
+}
+.item:last-child {
+  border: none;
+}
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.small {
+  color: #718174;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.hidden {
+  display: none;
+}
+@media(max-width: 480px) {
+  .card { padding: 16px; }
+  .stat strong { font-size: 21px; }
+}
+</style>
+</head>
+
+<body>
+<main class="container">
+
+<h1>🍱 음식 칼로리 자동계산</h1>
+<p class="subtitle">
+  사진 한 장으로 음식의 예상 칼로리를 알아보세요!
+</p>
+
+<section class="card">
+  <h2>🔑 AI 연결 설정</h2>
+  <label for="apiKey">Gemini API 키</label>
+  <input
+    type="password"
+    id="apiKey"
+    placeholder="Gemini API 키 입력"
+    autocomplete="off"
+  >
+  <p class="small">
+    Google AI Studio에서 발급한 API 키를 입력하세요.
+    키는 저장하지 않으며 현재 페이지에서만 사용합니다.
+    공개된 컴퓨터에서는 입력하지 마세요.
+  </p>
+</section>
+
+<section class="card">
+  <h2>📷 음식 사진 분석</h2>
+
+  <input
+    type="file"
+    id="photo"
+    accept="image/jpeg,image/png,image/webp"
+  >
+
+  <img id="preview" alt="업로드한 음식 사진">
+
+  <button id="analyzeBtn" onclick="analyzePhoto()">
+    ✨ AI 음식 분석하기
+  </button>
+
+  <button class="gray" onclick="resetPhoto()">
+    다시 시작
+  </button>
+
+  <p id="status" role="status">
+    음식 사진을 선택해주세요.
+  </p>
+</section>
+
+<section class="card hidden" id="resultSection">
+  <h2>🔍 AI 분석 결과</h2>
+
+  <label for="resultName">음식 이름</label>
+  <input id="resultName">
+
+  <div class="grid">
+    <div class="stat">
+      예상 칼로리
+      <strong id="resultCal">0 kcal</strong>
+    </div>
+
+    <div class="stat">
+      탄수화물
+      <strong id="resultCarb">0 g</strong>
+    </div>
+
+    <div class="stat">
+      단백질
+      <strong id="resultProtein">0 g</strong>
+    </div>
+
+    <div class="stat">
+      지방
+      <strong id="resultFat">0 g</strong>
+    </div>
+  </div>
+
+  <h3>🥗 음식 재료 수정</h3>
+  <p class="small">
+    각 재료의 예상 중량과 100g당 영양정보를
+    수정하면 칼로리가 자동으로 다시 계산됩니다.
+  </p>
+
+  <div id="ingredients"></div>
+
+  <button class="gray" onclick="addIngredient()">
+    + 재료 추가
+  </button>
+
+  <button onclick="saveResult()">
+    🍽️ 합산 목록에 추가
+  </button>
+</section>
+
+<section class="card">
+  <h2>➕ 음식 직접 추가</h2>
+
+  <form id="foodForm">
+
+    <label for="foodName">음식 이름</label>
+    <input
+      id="foodName"
+      placeholder="예: 김밥"
+      required
+    >
+
+    <div class="grid">
+      <label>
+        칼로리 (kcal)
+        <input
+          id="foodCal"
+          type="number"
+          min="0"
+          step="any"
+          required
+        >
+      </label>
+
+      <label>
+        탄수화물 (g)
+        <input
+          id="foodCarb"
+          type="number"
+          min="0"
+          step="any"
+          value="0"
+          required
+        >
+      </label>
+
+      <label>
+        단백질 (g)
+        <input
+          id="foodProtein"
+          type="number"
+          min="0"
+          step="any"
+          value="0"
+          required
+        >
+      </label>
+
+      <label>
+        지방 (g)
+        <input
+          id="foodFat"
+          type="number"
+          min="0"
+          step="any"
+          value="0"
+          required
+        >
+      </label>
+    </div>
+
+    <button type="submit">
+      + 음식 추가하기
+    </button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>📋 추가한 음식 목록</h2>
+  <div id="foodList">
+    추가한 음식이 없습니다.
+  </div>
+
+  <button class="red" onclick="clearFoods()">
+    전체 음식 삭제
+  </button>
+</section>
+
+<section class="card">
+  <h2>📊 전체 음식 영양 합계</h2>
+
+  <div class="grid">
+    <div class="stat">
+      총 칼로리
+      <strong id="totalCal">0 kcal</strong>
+    </div>
+
+    <div class="stat">
+      탄수화물
+      <strong id="totalCarb">0 g</strong>
+    </div>
+
+    <div class="stat">
+      단백질
+      <strong id="totalProtein">0 g</strong>
+    </div>
+
+    <div class="stat">
+      지방
+      <strong id="totalFat">0 g</strong>
+    </div>
+  </div>
+
+  <p id="foodCount">추가한 음식: 0개</p>
+
+  <p class="small">
+    AI가 추정한 값은 실제 섭취량이나
+    영양성분과 다를 수 있습니다.
+  </p>
+</section>
+
+</main>
+
 <script>
-const $=s=>document.querySelector(s);let file=null, data=null, busy=false;
-function status(message,error=false){$('#status').textContent=message;$('#status').className='status'+(error?' err':'')}
-function clearStatus(){$('#status').classList.add('hidden')}
-function chooseFile(f){if(!f)return; if(!['image/jpeg','image/png','image/webp'].includes(f.type))return status('JPG, PNG, WEBP 파일을 선택해 주세요.',true);if(f.size>8*1024*1024)return status('사진은 8MB 이하만 올릴 수 있습니다.',true);file=f;$('#analyze').disabled=false;$('#uploadIcon').style.display='none';$('#uploadText').textContent=f.name;$('#preview').src=URL.createObjectURL(f);$('#preview').style.display='block';$('#result').classList.add('hidden');clearStatus()}
-$('#photo').addEventListener('change',e=>chooseFile(e.target.files[0]));$('#drop').onclick=()=>$('#photo').click();$('#drop').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#photo').click()}};$('#drop').ondragover=e=>{e.preventDefault();$('#drop').classList.add('drag')};$('#drop').ondragleave=()=>$('#drop').classList.remove('drag');$('#drop').ondrop=e=>{e.preventDefault();$('#drop').classList.remove('drag');chooseFile(e.dataTransfer.files[0])};
-function num(v){return Math.max(0,Number(v)||0)}
-function recalc(){if(!data)return;let v={calories:0,carbs:0,protein:0,fat:0};for(const i of data.ingredients){for(const k in v)v[k]+=num(i[k+'_per_100g'])*num(i.grams)/100}for(const k in v)$('#'+k).textContent=Math.round(v[k]);}
-function renderRows(){const t=$('#ingredients');t.replaceChildren();data.ingredients.forEach((ing,index)=>{const tr=document.createElement('tr');let name=document.createElement('input');name.type='text';name.value=ing.name;name.setAttribute('aria-label','재료 이름');name.onchange=()=>{ing.name=name.value};let amount=document.createElement('input');amount.type='number';amount.min='0';amount.max='10000';amount.value=ing.grams;amount.setAttribute('aria-label','재료 양 그램');amount.oninput=()=>{ing.grams=num(amount.value);recalc();renderCalCell()};let cal=document.createElement('span');function renderCalCell(){cal.textContent=Math.round(num(ing.calories_per_100g)*num(ing.grams)/100)}renderCalCell();let del=document.createElement('button');del.className='small-btn danger';del.textContent='삭제';del.onclick=()=>{data.ingredients.splice(index,1);renderRows();recalc()};for(const item of [name,amount,cal,del]){let td=document.createElement('td');td.append(item);tr.append(td)}t.append(tr)})}
-function showResult(r){data=r;$('#foodName').textContent=r.food_name;$('#description').textContent=r.description;renderRows();recalc();$('#result').classList.remove('hidden');$('#result').scrollIntoView({behavior:'smooth',block:'start'})}
-async function askClaude(revision=false){if(busy)return;busy=true;$('#analyze').disabled=true;$('#reanalyze').disabled=true;status('AI가 사진과 재료 정보를 분석하고 있습니다…');try{let res;if(revision){res=await fetch('/api/reanalyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({food_name:data.food_name,ingredients:data.ingredients})})}else{const body=new FormData();body.append('image',file);res=await fetch('/api/analyze',{method:'POST',body})}const json=await res.json();if(!res.ok)throw Error(json.error||'분석에 실패했습니다.');showResult(json);status('분석이 완료되었습니다. 재료와 양을 자유롭게 수정해 보세요.')}catch(e){status(e.message+(location.protocol==='file:'?' 이 HTML은 Claude API 서버와 함께 실행해야 합니다. README를 확인해 주세요.':''),true)}finally{busy=false;$('#analyze').disabled=!file;$('#reanalyze').disabled=false}}
-$('#analyze').onclick=()=>askClaude();$('#reanalyze').onclick=()=>{data.food_name=$('#foodName').textContent;askClaude(true)};$('#editName').onclick=()=>{const name=prompt('음식 이름을 입력하세요.',data.food_name);if(name&&name.trim()){data.food_name=name.trim();$('#foodName').textContent=data.food_name}};
-$('#addIngredient').onclick=()=>{if(!data)return;data.ingredients.push({name:'새 재료',grams:50,calories_per_100g:0,carbs_per_100g:0,protein_per_100g:0,fat_per_100g:0});renderRows();recalc();status('재료를 추가했습니다. 이름과 양을 수정한 뒤 「수정한 재료로 AI 재분석」을 누르면 영양 정보를 갱신합니다.')};
-$('#reset').onclick=()=>{file=null;data=null;$('#photo').value='';$('#preview').removeAttribute('src');$('#preview').style.display='none';$('#uploadIcon').style.display='';$('#uploadText').textContent='사진을 선택하거나 이곳에 놓아주세요';$('#analyze').disabled=true;$('#result').classList.add('hidden');clearStatus();window.scrollTo({top:0,behavior:'smooth'})};
-</script></body></html>
+const MODEL = "gemini-2.5-flash";
+
+let foods = [];
+let analysis = null;
+let selectedImage = null;
+
+const $ = id => document.getElementById(id);
+const number = value =>
+  Math.max(0, Number(value) || 0);
+const format = value =>
+  (Math.round(number(value) * 10) / 10).toLocaleString();
+
+function setStatus(text) {
+  $("status").textContent = text;
+}
+
+// 사진 선택
+$("photo").addEventListener("change", async function() {
+  const file = this.files[0];
+
+  selectedImage = null;
+  $("preview").style.display = "none";
+
+  if (!file) return;
+
+  if (![
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ].includes(file.type)) {
+    setStatus("JPG, PNG, WEBP 이미지만 사용할 수 있습니다.");
+    return;
+  }
+
+  if (file.size > 6 * 1024 * 1024) {
+    setStatus("6MB 이하 사진을 선택해주세요.");
+    return;
+  }
+
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    selectedImage = data;
+    $("preview").src = data;
+    $("preview").style.display = "block";
+    setStatus("사진이 준비되었습니다. AI 분석을 눌러주세요.");
+  } catch (error) {
+    setStatus("사진을 불러오지 못했습니다.");
+  }
+});
+
+// Gemini API 음식 사진 분석
+async function analyzePhoto() {
+  const apiKey = $("apiKey").value.trim();
+
+  if (!apiKey) {
+    setStatus("Gemini API 키를 먼저 입력해주세요.");
+    return;
+  }
+
+  if (!selectedImage) {
+    setStatus("음식 사진을 먼저 선택해주세요.");
+    return;
+  }
+
+  const button = $("analyzeBtn");
+  button.disabled = true;
+
+  setStatus("AI가 사진 속 음식을 분석하고 있습니다...");
+
+  const mime = selectedImage
+    .substring(5, selectedImage.indexOf(";"));
+
+  const base64 = selectedImage.split(",")[1];
+
+  const prompt = `
+사진에 보이는 음식을 분석하세요.
+
+음식 이름, 재료, 각 재료의 예상 중량,
+재료별 100g당 열량과 탄수화물, 단백질,
+지방을 추정하세요.
+
+조리법이나 음식 중량이 불확실하면 일반적인
+1인분 기준으로 합리적으로 추정하세요.
+추정값임을 전제로 숫자를 작성하세요.
+
+음식이 없는 사진이면 ingredients를 빈 배열로
+반환하세요.
+
+다음 JSON 형식만 반환하세요.
+
+{
+  "food_name": "음식 이름",
+  "ingredients": [
+    {
+      "name": "재료 이름",
+      "grams": 100,
+      "calories_per_100g": 130,
+      "carbs_per_100g": 25,
+      "protein_per_100g": 3,
+      "fat_per_100g": 1
+    }
+  ]
+}
+`;
+
+  try {
+    const url =
+      "https://generativelanguage.googleapis.com/" +
+      "v1beta/models/" + MODEL + ":generateContent";
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inline_data: {
+                mime_type: mime,
+                data: base64
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.2
+        }
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error?.message || "API 요청 실패"
+      );
+    }
+
+    const text = data.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || "")
+      .join("");
+
+    if (!text) {
+      throw new Error("AI가 분석 결과를 반환하지 않았습니다.");
+    }
+
+    const parsed = JSON.parse(text);
+
+    if (!Array.isArray(parsed.ingredients) ||
+        parsed.ingredients.length === 0) {
+      throw new Error("사진에서 음식을 인식하지 못했습니다.");
+    }
+
+    analysis = {
+      food_name: String(parsed.food_name || "음식"),
+      ingredients: parsed.ingredients.map(item => ({
+        name: String(item.name || "재료"),
+        grams: number(item.grams),
+        calories_per_100g: number(
+          item.calories_per_100g
+        ),
+        carbs_per_100g: number(
+          item.carbs_per_100g
+        ),
+        protein_per_100g: number(
+          item.protein_per_100g
+        ),
+        fat_per_100g: number(
+          item.fat_per_100g
+        )
+      }))
+    };
+
+    $("resultName").value = analysis.food_name;
+    $("resultSection").classList.remove("hidden");
+
+    renderIngredients();
+    updateAnalysis();
+
+    setStatus("✅ AI 분석이 완료되었습니다!");
+
+  } catch (error) {
+    setStatus(
+      "❌ 분석 실패\n" +
+      error.message +
+      "\nAPI 키, 사용 한도, 네트워크 연결을 확인해주세요."
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
+// 영양정보 계산
+function calculateNutrition(ingredients) {
+  const total = {
+    cal: 0,
+    carb: 0,
+    protein: 0,
+    fat: 0
+  };
+
+  ingredients.forEach(item => {
+    const ratio = number(item.grams) / 100;
+
+    total.cal +=
+      number(item.calories_per_100g) * ratio;
+
+    total.carb +=
+      number(item.carbs_per_100g) * ratio;
+
+    total.protein +=
+      number(item.protein_per_100g) * ratio;
+
+    total.fat +=
+      number(item.fat_per_100g) * ratio;
+  });
+
+  return total;
+}
+
+// 분석 결과 업데이트
+function updateAnalysis() {
+  if (!analysis) return;
+
+  const n = calculateNutrition(analysis.ingredients);
+
+  $("resultCal").textContent = format(n.cal) + " kcal";
+  $("resultCarb").textContent = format(n.carb) + " g";
+  $("resultProtein").textContent =
+    format(n.protein) + " g";
+  $("resultFat").textContent = format(n.fat) + " g";
+}
+
+// 재료 입력 생성
+function createInput(labelText, initial, callback, numeric) {
+  const label = document.createElement("label");
+  label.textContent = labelText;
+
+  const input = document.createElement("input");
+  input.type = numeric ? "number" : "text";
+  input.value = initial;
+
+  if (numeric) {
+    input.min = "0";
+    input.step = "any";
+  }
+
+  input.addEventListener("input", () => {
+    callback(numeric ? number(input.value) : input.value);
+    updateAnalysis();
+  });
+
+  label.appendChild(input);
+  return label;
+}
+
+// 재료 목록
+function renderIngredients() {
+  const container = $("ingredients");
+  container.replaceChildren();
+
+  analysis.ingredients.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.appendChild(createInput(
+      "재료 이름",
+      item.name,
+      value => item.name = value,
+      false
+    ));
+
+    div.appendChild(createInput(
+      "재료 양(g)",
+      item.grams,
+      value => item.grams = value,
+      true
+    ));
+
+    const grid = document.createElement("div");
+    grid.className = "grid";
+
+    const fields = [
+      ["100g당 칼로리", "calories_per_100g"],
+      ["100g당 탄수화물", "carbs_per_100g"],
+      ["100g당 단백질", "protein_per_100g"],
+      ["100g당 지방", "fat_per_100g"]
+    ];
+
+    fields.forEach(([label, key]) => {
+      grid.appendChild(createInput(
+        label,
+        item[key],
+        value => item[key] = value,
+        true
+      ));
+    });
+
+    const del = document.createElement("button");
+    del.className = "red";
+    del.textContent = "재료 삭제";
+
+    del.onclick = () => {
+      analysis.ingredients.splice(index, 1);
+      renderIngredients();
+      updateAnalysis();
+    };
+
+    div.appendChild(grid);
+    div.appendChild(del);
+    container.appendChild(div);
+  });
+}
+
+// 재료 추가
+function addIngredient() {
+  if (!analysis) return;
+
+  analysis.ingredients.push({
+    name: "새 재료",
+    grams: 100,
+    calories_per_100g: 0,
+    carbs_per_100g: 0,
+    protein_per_100g: 0,
+    fat_per_100g: 0
+  });
+
+  renderIngredients();
+  updateAnalysis();
+}
+
+// AI 분석 음식 목록에 저장
+function saveResult() {
+  if (!analysis) return;
+
+  const nutrition = calculateNutrition(
+    analysis.ingredients
+  );
+
+  foods.push({
+    name: $("resultName").value.trim() || "음식",
+    ...nutrition
+  });
+
+  renderFoods();
+  setStatus("✅ 합산 목록에 음식이 추가되었습니다.");
+}
+
+// 음식 직접 추가
+$("foodForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  foods.push({
+    name: $("foodName").value.trim(),
+    cal: number($("foodCal").value),
+    carb: number($("foodCarb").value),
+    protein: number($("foodProtein").value),
+    fat: number($("foodFat").value)
+  });
+
+  renderFoods();
+  this.reset();
+});
+
+// 음식 목록 및 합산
+function renderFoods() {
+  const box = $("foodList");
+  box.replaceChildren();
+
+  const total = {
+    cal: 0,
+    carb: 0,
+    protein: 0,
+    fat: 0
+  };
+
+  foods.forEach((food, index) => {
+    total.cal += number(food.cal);
+    total.carb += number(food.carb);
+    total.protein += number(food.protein);
+    total.fat += number(food.fat);
+
+    const div = document.createElement("div");
+    div.className = "item";
+
+    const head = document.createElement("div");
+    head.className = "item-head";
+
+    const title = document.createElement("strong");
+    title.textContent = food.name;
+
+    const del = document.createElement("button");
+    del.className = "red";
+    del.textContent = "삭제";
+
+    del.onclick = () => {
+      foods.splice(index, 1);
+      renderFoods();
+    };
+
+    head.append(title, del);
+
+    const detail = document.createElement("p");
+    detail.className = "small";
+
+    detail.textContent =
+      format(food.cal) + " kcal | 탄수화물 " +
+      format(food.carb) + "g | 단백질 " +
+      format(food.protein) + "g | 지방 " +
+      format(food.fat) + "g";
+
+    div.append(head, detail);
+    box.appendChild(div);
+  });
+
+  if (foods.length === 0) {
+    box.textContent = "추가한 음식이 없습니다.";
+  }
+
+  $("totalCal").textContent =
+    format(total.cal) + " kcal";
+
+  $("totalCarb").textContent =
+    format(total.carb) + " g";
+
+  $("totalProtein").textContent =
+    format(total.protein) + " g";
+
+  $("totalFat").textContent =
+    format(total.fat) + " g";
+
+  $("foodCount").textContent =
+    "추가한 음식: " + foods.length + "개";
+}
+
+// 전체 음식 삭제
+function clearFoods() {
+  if (!confirm("추가한 음식을 모두 삭제하시겠습니까?")) {
+    return;
+  }
+
+  foods = [];
+  renderFoods();
+}
+
+// 사진 다시 시작
+function resetPhoto() {
+  analysis = null;
+  selectedImage = null;
+
+  $("photo").value = "";
+  $("preview").removeAttribute("src");
+  $("preview").style.display = "none";
+
+  $("resultSection").classList.add("hidden");
+
+  setStatus("새로운 음식 사진을 선택해주세요.");
+}
+
+renderFoods();
+</script>
+
+</body>
+</html>
