@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>속담 이어 말하기</title>
+<style>
+:root{--ink:#1b1f3b;--bg1:#2b2f77;--bg2:#5a43c4;--card:#fff;--yel:#ffc233;--yel2:#c98a00;--ok:#1f9d55;--no:#e04b3f;--line:#d9dcf2}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:linear-gradient(160deg,var(--bg1),var(--bg2));padding:20px 14px 40px}
+.wrap{max-width:720px;margin:0 auto}
+.screen.hidden,.hidden{display:none!important}
+.hero{text-align:center;color:#fff;margin:6px 0 18px}
+.hero .emoji{font-size:64px;line-height:1}
+h1{margin:6px 0 8px;font-size:38px;letter-spacing:-.02em}
+.hero p{margin:0 auto;max-width:520px;font-size:18px;opacity:.92}
+.panel{background:var(--card);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 8px 0 rgba(0,0,0,.18)}
+.panel h2{margin:0 0 12px;font-size:20px}
+label.t{display:flex;justify-content:space-between;font-size:18px;font-weight:700;margin-bottom:8px}
+#timeVal{color:var(--bg2)}
+input[type=range]{width:100%;height:36px;accent-color:var(--bg2)}
+.scale{display:flex;justify-content:space-between;color:#6a6f94;font-size:14px;margin-bottom:16px}
+.btn3d{font:inherit;font-size:22px;font-weight:800;color:var(--ink);background:var(--yel);border:0;border-radius:16px;padding:0 22px;min-height:62px;width:100%;cursor:pointer;box-shadow:0 6px 0 var(--yel2);transition:transform .08s,box-shadow .08s}
+.btn3d:active{transform:translateY(5px);box-shadow:0 1px 0 var(--yel2)}
+.btn3d:disabled{opacity:.5;cursor:default}
+.btn3d.alt{background:#eceefc;box-shadow:0 6px 0 #b6bbe6;font-size:18px;min-height:54px}
+.btn3d.alt:active{box-shadow:0 1px 0 #b6bbe6}
+.btn3d.ok{background:#3ccf7e;box-shadow:0 6px 0 #1f9d55;color:#fff}
+.btn3d.ok:active{box-shadow:0 1px 0 #1f9d55}
+.file{display:inline-block;background:#eceefc;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+.file input{display:none}
+.note{font-size:14px;color:#5b6088;margin:10px 0 0}
+#deckInfo{margin:0 0 10px;font-size:16px}
+#deckInfo.err{color:var(--no);font-weight:700}
+button:focus-visible,input:focus-visible,.file:focus-within{outline:4px solid #ff7a00;outline-offset:2px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.chip{background:#fff;border-radius:16px;padding:8px 6px;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.18)}
+.chip small{display:block;color:#5b6088;font-size:14px}
+.chip b{font-size:26px;line-height:1.2}
+.chip.low b{color:var(--no)}
+.chip{padding-left:2px;padding-right:2px}
+.tbar{height:14px;background:rgba(255,255,255,.3);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.tbar i{display:block;height:100%;width:100%;background:var(--yel);transition:width .2s linear}
+.tbar.low i{background:var(--no)}
+.q{text-align:center}
+.q .lead{color:#5b6088;font-size:16px;margin:0 0 6px}
+.q .front{font-size:42px;font-weight:800;line-height:1.3;margin:4px 0 12px;word-break:keep-all}
+.q .front span{color:var(--bg2);letter-spacing:4px}
+.hint{min-height:44px;font-size:30px;font-weight:800;letter-spacing:6px;color:#b36b00;margin-bottom:10px}
+.boxes{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 22px;margin:8px 0 4px;cursor:text;min-height:60px}
+.word{display:flex;gap:6px}
+.box{width:var(--bw,52px);height:calc(var(--bw,52px)*1.2);border:3px solid var(--line);border-radius:12px;display:grid;place-items:center;font-size:clamp(20px,calc(var(--bw,52px)*.55),30px);font-weight:800;background:#fff;color:var(--ink);transition:border-color .12s,background .12s}
+.box.ghost{color:#b4b8d6}
+.box.act{border-color:var(--bg2);box-shadow:0 0 0 4px #d3cbff}
+.box.ok{border-color:var(--ok);background:#dff6e9}
+.box.bad{border-color:var(--no);background:#fde9e6}
+.box.miss{border-style:dashed}
+.ovl{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0;cursor:text}
+.cnt{color:#6a6f94;font-size:14px;margin-bottom:6px}
+.row{display:flex;gap:10px;margin-top:12px}
+.row .btn3d{font-size:19px;min-height:56px;flex:1}
+#fb{margin-top:16px;border-radius:16px;padding:14px 16px;text-align:left;font-size:18px;display:none}
+#fb.ok{display:block;background:#dff6e9;color:#12623a;font-weight:800;text-align:center;font-size:24px}
+#fb.no{display:block;background:#fde9e6;color:#8c2a20}
+#fb .full{display:block;font-size:22px;font-weight:800;margin:6px 0;color:var(--ink)}
+#fb .full em{font-style:normal;color:var(--no)}
+#fb .exp{display:block;margin-top:4px;color:#4a4f73}
+#fb .btn3d{margin-top:12px;font-size:19px;min-height:54px}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50}
+.end .big{font-size:64px;font-weight:800;color:var(--bg2);line-height:1.1}
+.end .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}
+.end .grid div{background:#f3f4fb;border-radius:14px;padding:10px;text-align:center}
+.end .grid b{display:block;font-size:26px}
+.miss{margin:8px 0 0;padding-left:20px;font-size:17px;line-height:1.8}
+@media (max-width:520px){.chip b{font-size:20px}.chip small{font-size:12px}h1{font-size:30px}.q .front{font-size:32px}}
+@media (prefers-reduced-motion:reduce){.tbar i{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="wrap">
+
+  <section class="screen" id="start">
+    <div class="hero"><div class="emoji">🧠</div><h1>속담 이어 말하기</h1>
+      <p>속담의 앞부분을 보고, 글자 수만큼 놓인 칸에 뒷부분을 한 글자씩 채워 보세요! 문제마다 정해진 시간 안에 풀고, 초성 힌트는 문제마다 2번까지 쓸 수 있어요.</p></div>
+    <div class="panel">
+      <h2>⚙️ 게임 설정 &amp; 타이머</h2>
+      <label class="t" for="qtime"><span>📝 문제당 풀 수 있는 시간</span><span id="qtimeVal">30초</span></label>
+      <input type="range" id="qtime" min="30" max="60" step="5" value="30">
+      <div class="scale"><span>30초</span><span>60초</span></div>
+      <button class="btn3d" id="startBtn">▶ 시작하기</button>
+    </div>
+    <div class="panel">
+      <h2>📄 문제 파일</h2>
+      <p id="deckInfo"></p>
+      <label class="file">선생님 CSV 파일 불러오기<input type="file" id="csv" accept=".csv,.txt,text/csv"></label>
+      <button class="btn3d alt hidden" id="deckReset" style="width:auto;margin-left:6px;min-height:44px;font-size:15px;padding:0 14px">기본 문제로</button>
+      <p class="note">CSV 형식: 번호,앞부분,뒷부분 (선택: 4번째 칸에 해설). 정답이 여러 개면 | 로 구분해요. 구구단, 사자성어, 영어 단어도 같은 방식으로 쓸 수 있어요.</p>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="game">
+    <div class="stats">
+      <div class="chip"><small>점수</small><b id="sScore">0</b></div>
+      <div class="chip"><small>맞힌 개수</small><b id="sOk">0</b></div>
+      <div class="chip"><small>진행</small><b id="sProg">1 / 1</b></div>
+      <div class="chip" id="sQChip"><small>문제 시간</small><b id="sQ">0</b></div>
+    </div>
+    <div class="tbar" id="tbar"><i id="tfill"></i></div>
+    <div class="panel q">
+      <p class="lead">속담을 이어서 말해 보세요</p>
+      <div class="front" id="front"></div>
+      <div class="boxes" id="boxes"><input class="ovl" id="ans" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="정답 입력"></div>
+      <div class="cnt" id="cnt"></div>
+      <div class="row">
+        <button class="btn3d alt" id="hintBtn">💡 초성 힌트 (2)</button>
+        <button class="btn3d ok" id="checkBtn">✔ 확인</button>
+      </div>
+      <div class="row"><button class="btn3d alt" id="skipBtn" style="font-size:16px;min-height:46px">모르겠어요 (건너뛰기)</button><button class="btn3d alt" id="stopBtn" style="font-size:16px;min-height:46px;flex:0 0 auto">그만하기</button></div>
+      <div id="fb" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="screen hidden" id="end">
+    <div class="panel end" style="text-align:center">
+      <h2 id="endTitle">⏰ 시간 끝!</h2>
+      <div class="big"><span id="eRate">0</span>%</div><div>정답률</div>
+      <div class="grid">
+        <div>점수<b id="eScore">0</b></div><div>맞힌 문제<b id="eOk">0 / 0</b></div>
+        <div>사용한 힌트<b id="eHint">0</b></div><div>문제당 시간<b id="eTime">0초</b></div>
+      </div>
+      <div id="missBox" class="hidden" style="text-align:left"><h2>📚 다시 확인해 볼까요?</h2><ul class="miss" id="missList"></ul></div>
+      <button class="btn3d" id="again" style="margin-top:16px">🔄 다시 하기</button>
+      <button class="btn3d alt" id="toStart" style="margin-top:12px">설정으로 돌아가기</button>
+    </div>
+  </section>
+</div>
+
+<script>
+var DEFAULT_CSV = `번호,앞부분,뒷부분
+1,티끌 모아,태산
+2,천 리 길도,한 걸음부터
+3,시작이,반이다
+4,공든 탑이,무너지랴
+5,우물을 파도,한 우물을 파라
+6,구슬이 서 말이라도,꿰어야 보배
+7,백지장도,맞들면 낫다
+8,콩 심은 데 콩 나고,팥 심은 데 팥 난다
+9,낙숫물이,댓돌 뚫는다
+10,첫술에,배부르랴
+11,가는 말이 고와야,오는 말이 곱다
+12,말 한마디에,천 냥 빚도 갚는다
+13,낮말은 새가 듣고,밤말은 쥐가 듣는다
+14,발 없는 말이,천 리 간다
+15,세 살 버릇,여든까지 간다
+16,웃는 낯에,침 못 뱉는다
+17,말이,씨가 된다
+18,같은 말이라도,아 다르고 어 다르다
+19,길고 짧은 것은,대어 보아야 안다
+20,열 길 물속은 알아도,한 길 사람 속은 모른다
+21,돌다리도,두들겨 보고 건너라
+22,아는 길도,물어 가라
+23,급할수록,돌아가라
+24,소 잃고,외양간 고친다
+25,호랑이도 제 말 하면,온다
+26,등잔 밑이,어둡다
+27,원숭이도,나무에서 떨어진다
+28,개구리 올챙이 적,생각 못 한다
+29,모로 가도,서울만 가면 된다
+30,하늘이 무너져도,솟아날 구멍이 있다
+31,일찍 일어나는 새가,벌레를 잡는다
+32,누워서,떡 먹기
+33,식은 죽,먹기
+34,누워서,침 뱉기
+35,배보다,배꼽이 더 크다
+36,그림의,떡
+37,남의 떡이,더 커 보인다
+38,작은 고추가,맵다
+39,싼 게,비지떡
+40,도토리,키 재기
+41,아는 것이,힘이다
+42,백 번 듣는 것이,한 번 보는 것만 못하다
+43,서당 개 삼 년이면,풍월을 읊는다
+44,될성부른 나무는,떡잎부터 알아본다
+45,하나를 보면,열을 안다
+46,가랑비에,옷 젖는 줄 모른다
+47,고래 싸움에,새우 등 터진다
+48,꿩 대신,닭
+49,비 온 뒤에,땅이 굳어진다
+50,가지 많은 나무에,바람 잘 날 없다`;
+var $=function(i){return document.getElementById(i)};
+var HINTS_PER_Q=2, POINTS=[10,7,5];
+var deck=[], order=[], qi=0, score=0, okN=0, tried=0, hintsUsed=0, hintTotal=0, missed=[];
+var cur=null, locked=false, running=false, timer=null, nextT=null, qLimit=30, qDeadline=0, lastQ=30, composing=false, pend=false;
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,"").replace(/\r\n?/g,"\n");
+  var rows=[],row=[],f="",q=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++} else q=false } else f+=c }
+    else if(c==='"') q=true;
+    else if(c===","){row.push(f);f=""}
+    else if(c==="\n"){row.push(f);rows.push(row);row=[];f=""}
+    else f+=c;
+  }
+  row.push(f); rows.push(row);
+  return rows.map(function(r){return r.map(function(x){return x.trim()})}).filter(function(r){return r.some(function(x){return x})});
+}
+function buildDeck(text){
+  var rows=parseCSV(text);
+  if(rows.length&&/앞|문제|question|번호/i.test(rows[0].join(","))&&!/^\d+$/.test(rows[0][0]))rows.shift();
+  if(!rows.length)return [];
+  var off=(/^\d+$/.test(rows[0][0])&&rows[0].length>=3)?1:0, map={}, out=[];
+  rows.forEach(function(r){
+    var q=r[off], a=r[off+1], e=r[off+2]||"";
+    if(!q||!a)return;
+    var key=norm(q);
+    var item=map[key];
+    if(!item){item={q:q,answers:[],exp:e};map[key]=item;out.push(item)}   /* 앞부분이 같으면 한 문제로 합치고 정답을 모두 인정 */
+    a.split("|").forEach(function(x){x=x.trim();if(x&&item.answers.indexOf(x)<0)item.answers.push(x)});
+    if(e&&!item.exp)item.exp=e;
+  });
+  return out;
+}
+
+/* ---------- 채점 (띄어쓰기·문장부호·조사/어미 유연 처리) ---------- */
+var SUF=["입니다","이에요","이야","이라","예요","이다","은","는","이","가","을","를","도","만","에","의","다","요"];
+function norm(s){return String(s).normalize("NFC").toLowerCase().replace(/[\s.,!?~"'“”‘’…·\-_()]/g,"")}
+function forms(s){
+  var n=norm(s), out=[n];
+  for(var i=0;i<SUF.length;i++){var x=SUF[i]; if(n.length>x.length&&n.slice(-x.length)===x){out.push(n.slice(0,-x.length));break}}
+  return out;
+}
+function lev(a,b){
+  var m=a.length,n=b.length,d=[],i,j;
+  for(i=0;i<=m;i++){d[i]=[i]} for(j=1;j<=n;j++)d[0][j]=j;
+  for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[m][n];
+}
+function grade(input,answers){
+  var B=forms(input), nin=norm(input);
+  if(!nin)return {ok:false};
+  for(var k=0;k<answers.length;k++){
+    var A=forms(answers[k]);
+    if(A.some(function(x){return B.indexOf(x)>=0}))return {ok:true,near:false,ans:answers[k]};
+  }
+  for(var k2=0;k2<answers.length;k2++){          /* 글자 하나 정도의 오타는 5글자 이상일 때만 인정 */
+    var na=norm(answers[k2]);
+    if(na.length>=5&&nin.length>=5&&lev(nin,na)<=1)return {ok:true,near:true,ans:answers[k2]};
+  }
+  return {ok:false};
+}
+
+/* ---------- 초성 힌트 ---------- */
+var CHO=["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+function hintOne(ans,level){
+  var first=true;
+  return Array.from(ans).map(function(ch){
+    if(/\s/.test(ch))return "\u00A0\u00A0";
+    var code=ch.charCodeAt(0)-0xAC00, h=(code>=0&&code<=11171)?CHO[Math.floor(code/588)]:"○";
+    if(first){first=false; if(level>=2)return ch}
+    return h;
+  }).join("");
+}
+function hintText(item,level){return item.answers.map(function(a){return hintOne(a,level)}).join("  /  ")}
+
+/* ---------- 폭죽 ---------- */
+var fx=$("fx"), fctx=fx.getContext("2d"), parts=[], fxOn=false;
+function fit(){fx.width=window.innerWidth;fx.height=window.innerHeight}
+fit(); window.addEventListener("resize",fit);
+function burst(){
+  if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  var cols=["#ffc233","#ff5c8a","#3ccf7e","#4aa8ff","#a86bff","#ff7a00"];
+  var r=$("front").getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  for(var s=0;s<3;s++){
+    var ox=cx+(Math.random()-.5)*Math.min(300,window.innerWidth*.6), oy=cy+(Math.random()-.5)*80;
+    for(var i=0;i<34;i++){
+      var a=Math.random()*Math.PI*2, v=3+Math.random()*6;
+      parts.push({x:ox,y:oy,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,life:55+Math.random()*25,c:cols[(Math.random()*cols.length)|0],r:3+Math.random()*3});
+    }
+  }
+  if(!fxOn){fxOn=true;requestAnimationFrame(fxLoop)}
+}
+function fxLoop(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(function(p){return p.life>0});
+  parts.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.18;p.vx*=.985;p.life--;
+    fctx.globalAlpha=Math.min(1,p.life/25);fctx.fillStyle=p.c;
+    fctx.beginPath();fctx.arc(p.x,p.y,p.r,0,7);fctx.fill();
+  });
+  fctx.globalAlpha=1;
+  if(parts.length)requestAnimationFrame(fxLoop); else {fxOn=false;fctx.clearRect(0,0,fx.width,fx.height)}
+}
+
+/* ---------- 게임 흐름 ---------- */
+function show(id){["start","game","end"].forEach(function(s){$(s).classList.toggle("hidden",s!==id)})}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function cnt(s){return Array.from(s.replace(/\s/g,"")).length}
+
+function setDeck(text,label){
+  var d=buildDeck(text);
+  if(!d.length){$("deckInfo").textContent="문제를 읽지 못했어요. CSV 형식(앞부분,뒷부분)을 확인해 주세요.";$("deckInfo").className="err";return false}
+  deck=d; $("deckInfo").className=""; $("deckInfo").textContent=label+" · 문제 "+deck.length+"개 준비됨";
+  return true;
+}
+
+function start(){
+  qLimit=+$("qtime").value; score=0;okN=0;tried=0;hintTotal=0;missed=[];qi=0;
+  order=shuffle(deck); running=true; locked=false;
+  show("game"); showQ();
+  clearInterval(timer); timer=setInterval(tick,100);
+}
+function renderStats(){
+  $("sScore").textContent=score; $("sOk").textContent=okN;
+  $("sProg").textContent=Math.min(qi+1,order.length)+" / "+order.length;
+  if(!locked)lastQ=Math.max(0,(qDeadline-performance.now())/1000);
+  $("sQ").textContent=Math.ceil(lastQ)+"초";
+  var low=lastQ<=5;
+  $("sQChip").classList.toggle("low",low); $("tbar").classList.toggle("low",low);
+  $("tfill").style.width=(lastQ/qLimit*100)+"%";
+}
+function tick(){
+  if(!running)return; renderStats();
+  if(!locked&&performance.now()>=qDeadline)wrong(null,"⏰ 문제 시간이 끝났어요!");
+}
+
+/* 글자 수만큼 칸 만들기 */
+function typedChars(){return Array.from($("ans").value.replace(/\s/g,"")).slice(0,cur.N)}
+function typedPretty(){
+  var t=typedChars(), i=0;
+  return cur.words.map(function(w){var s=t.slice(i,i+w.length).join("");i+=w.length;return s}).filter(Boolean).join(" ");
+}
+function buildBoxes(){
+  var bx=$("boxes"); bx.querySelectorAll(".word").forEach(function(w){w.remove()});
+  cur.words.forEach(function(w){
+    var d=document.createElement("div"); d.className="word";
+    w.forEach(function(){var s=document.createElement("span");s.className="box";d.appendChild(s)});
+    bx.appendChild(d);
+  });
+  var maxw=Math.max.apply(null,cur.words.map(function(w){return w.length}));
+  var avail=bx.clientWidth||320;
+  bx.style.setProperty("--bw",Math.max(30,Math.min(56,Math.floor((avail-(maxw-1)*6)/maxw)))+"px");
+  renderBoxes("typing");
+}
+function renderBoxes(state){
+  var t=typedChars(), bs=$("boxes").querySelectorAll(".box");
+  for(var i=0;i<bs.length;i++){
+    var ch=t[i], cls="box", txt="", ans=cur.chars[i];
+    if(ch!==undefined){txt=ch;cls+=" fill"}
+    else if(hintsUsed>0){
+      txt=(hintsUsed>=2&&i===0)?ans:(/[가-힣]/.test(ans)?CHO[Math.floor((ans.charCodeAt(0)-0xAC00)/588)]:"○");
+      cls+=" ghost";
+    }
+    if(state==="typing"){ if(!locked&&i===Math.min(t.length,cur.N-1))cls+=" act" }
+    else if(state==="ok") cls+=" ok";
+    else if(ch===undefined) cls+=" bad miss";
+    else cls+=(ch.toLowerCase()===ans.toLowerCase()?" ok":" bad");
+    bs[i].className=cls; bs[i].textContent=txt;
+  }
+  $("cnt").textContent=cur.N+"글자 · "+t.length+" / "+cur.N;
+}
+
+function showQ(){
+  cur=order[qi]; locked=false; hintsUsed=0; qDeadline=performance.now()+qLimit*1000; lastQ=qLimit;
+  var best=cur.answers.reduce(function(a,b){return cnt(b)>cnt(a)?b:a});   /* 정답이 여러 개면 가장 긴 것에 맞춰 칸을 만듦 */
+  cur.words=best.split(/\s+/).filter(Boolean).map(function(w){return Array.from(w)});
+  cur.chars=[].concat.apply([],cur.words); cur.N=cur.chars.length;
+  $("front").innerHTML=""; $("front").appendChild(document.createTextNode(cur.q+" "));
+  var sp=document.createElement("span"); sp.textContent="＿＿＿"; $("front").appendChild(sp);
+  $("fb").className=""; $("fb").innerHTML="";
+  var a=$("ans"); a.value=""; a.disabled=false; a.setAttribute("aria-label","정답 입력, "+cur.N+"글자");
+  $("checkBtn").disabled=false; $("skipBtn").disabled=false; updHintBtn();
+  buildBoxes(); renderStats(); a.focus();
+}
+function advance(){ qi++; if(qi>=order.length)finish(true); else showQ() }
+function updHintBtn(){var left=HINTS_PER_Q-hintsUsed;$("hintBtn").textContent="💡 초성 힌트 ("+left+")";$("hintBtn").disabled=locked||left<=0}
+
+function useHint(){
+  if(locked||hintsUsed>=HINTS_PER_Q)return;
+  hintsUsed++; hintTotal++; updHintBtn(); renderBoxes("typing"); $("ans").focus();
+}
+function lockUI(){locked=true;$("ans").disabled=true;$("checkBtn").disabled=true;$("skipBtn").disabled=true;updHintBtn()}
+
+function submit(){
+  if(locked||!running)return;
+  var val=typedChars().join(""); if(!val)return;
+  var shown=typedPretty(), g=grade(val,cur.answers); tried++; lockUI();
+  var fb=$("fb");
+  if(g.ok){
+    okN++; var pts=POINTS[Math.min(hintsUsed,POINTS.length-1)]; score+=pts;
+    fb.className="ok";
+    fb.textContent="🎉 정답! +"+pts+"점"+(g.near?" (맞춤법을 확인해요: "+cur.q+" "+g.ans+")":"");
+    renderBoxes("ok"); burst(); renderStats();
+    nextT=setTimeout(function(){if(running)advance()},1000);
+  }else{
+    wrong(shown,"아쉬워요!");
+  }
+}
+function wrong(val,title){
+  lockUI(); if(val==null)tried++;
+  missed.push(cur); renderBoxes("wrong");
+  var fb=$("fb"); fb.className="no"; fb.innerHTML="";
+  var h=document.createElement("strong"); h.textContent=title; fb.appendChild(h);
+  var full=document.createElement("span"); full.className="full";
+  full.textContent=cur.answers.map(function(a){return cur.q+" "+a}).join("  /  ");
+  fb.appendChild(full);
+  if(val){var me=document.createElement("span");me.textContent="내가 쓴 답: "+val;fb.appendChild(me)}
+  var ex=document.createElement("span"); ex.className="exp";
+  ex.textContent=cur.exp?("💬 "+cur.exp):"💬 정답을 소리 내어 읽어 보고, 다음 문제에서 다시 도전해요!";
+  fb.appendChild(ex);
+  var nb=document.createElement("button"); nb.className="btn3d";
+  nb.textContent=(qi+1>=order.length)?"결과 보기 🏁":"다음 문제 ▶";
+  nb.onclick=function(){if(running)advance()};
+  fb.appendChild(nb); nb.focus();
+}
+function skip(){ if(locked||!running)return; wrong(null,"건너뛰었어요."); }
+
+function finish(done){
+  running=false; clearInterval(timer); clearTimeout(nextT);
+  show("end");
+  $("eRate").textContent=tried?Math.round(okN/tried*100):0;
+  $("eScore").textContent=score; $("eOk").textContent=okN+" / "+tried;
+  $("eHint").textContent=hintTotal+"회"; $("eTime").textContent=qLimit+"초";
+  var seen={}, list=missed.filter(function(m){if(seen[m.q])return false;seen[m.q]=1;return true});
+  var ul=$("missList"); ul.innerHTML="";
+  list.forEach(function(m){var li=document.createElement("li");li.textContent=m.answers.map(function(a){return m.q+" "+a}).join(" / ");ul.appendChild(li)});
+  $("missBox").classList.toggle("hidden",!list.length);
+  $("endTitle").textContent=done?"🏁 모든 문제를 풀었어요!":"🏁 여기까지 했어요!";
+}
+
+/* ---------- 이벤트 ---------- */
+$("qtime").oninput=function(){$("qtimeVal").textContent=$("qtime").value+"초"};
+$("qtime").oninput();
+$("startBtn").onclick=start;
+$("checkBtn").onclick=submit;
+$("hintBtn").onclick=useHint;
+$("skipBtn").onclick=skip;
+$("stopBtn").onclick=function(){if(running)finish(false)};
+function clip(){var a=$("ans"),ch=Array.from(a.value.replace(/\s/g,""));if(ch.length>cur.N)a.value=ch.slice(0,cur.N).join("")}
+$("ans").addEventListener("compositionstart",function(){composing=true});
+$("ans").addEventListener("compositionend",function(){composing=false;clip();renderBoxes("typing");if(pend){pend=false;submit()}});
+$("ans").addEventListener("input",function(){if(!composing)clip();renderBoxes("typing")});
+$("ans").addEventListener("keydown",function(e){
+  if(e.key==="Enter"){e.preventDefault(); if(e.isComposing||e.keyCode===229)pend=true; else submit()}
+});
+$("boxes").addEventListener("click",function(){if(!locked)$("ans").focus()});
+$("again").onclick=start;
+$("toStart").onclick=function(){show("start")};
+$("csv").onchange=function(){
+  var f=this.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){ if(setDeck(String(r.result),f.name))$("deckReset").classList.remove("hidden") };
+  r.readAsText(f,"utf-8"); this.value="";
+};
+$("deckReset").onclick=function(){setDeck(DEFAULT_CSV,"기본 속담");$("deckReset").classList.add("hidden")};
+setDeck(DEFAULT_CSV,"기본 속담");
+</script>
+</body>
+</html>
